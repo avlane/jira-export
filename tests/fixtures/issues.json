@@ -1,0 +1,954 @@
+[
+  {
+    "expand": "operations,versionedRepresentations,editmeta,changelog,customfield_10010,renderedFields",
+    "id": "10101",
+    "self": "https://example.atlassian.net/rest/api/3/issue/10101",
+    "key": "PLAT-101",
+    "fields": {
+      "summary": "Login page times out",
+      "issuetype": {
+        "self": "https://example.atlassian.net/rest/api/3/issuetype/10004",
+        "id": "10004",
+        "description": "A problem which impairs or prevents the functions of the product.",
+        "iconUrl": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10303",
+        "name": "Bug",
+        "subtask": false,
+        "avatarId": 10303
+      },
+      "project": {
+        "self": "https://example.atlassian.net/rest/api/3/project/10000",
+        "id": "10000",
+        "key": "PLAT",
+        "name": "Platform",
+        "projectTypeKey": "software",
+        "simplified": false,
+        "avatarUrls": {
+          "48x48": "https://example.atlassian.net/secure/projectavatar?pid=10000"
+        }
+      },
+      "status": {
+        "self": "https://example.atlassian.net/rest/api/3/status/1",
+        "description": "",
+        "iconUrl": "https://example.atlassian.net/",
+        "name": "In Progress",
+        "id": "10004",
+        "statusCategory": {
+          "self": "https://example.atlassian.net/rest/api/3/statuscategory/4",
+          "id": 4,
+          "key": "indeterminate",
+          "colorName": "yellow",
+          "name": "In Progress"
+        }
+      },
+      "priority": {
+        "self": "https://example.atlassian.net/rest/api/3/priority/2",
+        "iconUrl": "https://example.atlassian.net/images/icons/priorities/high.svg",
+        "name": "High",
+        "id": "2"
+      },
+      "assignee": {
+        "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+        "accountId": "5b10ac8d82e05b22cc7d4ef5",
+        "accountType": "atlassian",
+        "emailAddress": "alice.moreau@example.com",
+        "avatarUrls": {
+          "48x48": "https://secure.gravatar.com/avatar/0.png"
+        },
+        "displayName": "Alice Moreau",
+        "active": true,
+        "timeZone": "Europe/Dublin"
+      },
+      "reporter": {
+        "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b6a3c1f2d8e4a0b9c7f1e22",
+        "accountId": "5b6a3c1f2d8e4a0b9c7f1e22",
+        "accountType": "atlassian",
+        "emailAddress": "bob.okafor@example.com",
+        "avatarUrls": {
+          "48x48": "https://secure.gravatar.com/avatar/0.png"
+        },
+        "displayName": "Bob Okafor",
+        "active": true,
+        "timeZone": "Europe/Dublin"
+      },
+      "creator": {
+        "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b6a3c1f2d8e4a0b9c7f1e22",
+        "accountId": "5b6a3c1f2d8e4a0b9c7f1e22",
+        "accountType": "atlassian",
+        "emailAddress": "bob.okafor@example.com",
+        "avatarUrls": {
+          "48x48": "https://secure.gravatar.com/avatar/0.png"
+        },
+        "displayName": "Bob Okafor",
+        "active": true,
+        "timeZone": "Europe/Dublin"
+      },
+      "created": "2021-02-03T10:15:22.123+0000",
+      "updated": "2021-02-05T13:31:02.511+0000",
+      "resolution": null,
+      "resolutiondate": null,
+      "duedate": null,
+      "labels": [
+        "auth",
+        "p1"
+      ],
+      "components": [
+        {
+          "self": "https://example.atlassian.net/rest/api/3/component/10000",
+          "id": "10000",
+          "name": "Web"
+        }
+      ],
+      "fixVersions": [
+        {
+          "self": "https://example.atlassian.net/rest/api/3/version/10000",
+          "id": "10000",
+          "name": "2.15",
+          "archived": false,
+          "released": false
+        }
+      ],
+      "description": {
+        "version": 1,
+        "type": "doc",
+        "content": [
+          {
+            "type": "heading",
+            "attrs": {
+              "level": 2
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Summary"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Users on the "
+              },
+              {
+                "type": "text",
+                "text": "login page",
+                "marks": [
+                  {
+                    "type": "strong"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " see a spinner for 30 seconds and then a timeout. "
+              },
+              {
+                "type": "text",
+                "text": "Reported by "
+              },
+              {
+                "type": "mention",
+                "attrs": {
+                  "id": "5b6a3c1f2d8e4a0b9c7f1e22",
+                  "text": "@Bob Okafor",
+                  "accessLevel": ""
+                }
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "type": "heading",
+            "attrs": {
+              "level": 3
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Steps to reproduce"
+              }
+            ]
+          },
+          {
+            "type": "orderedList",
+            "attrs": {
+              "order": 1
+            },
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Open the login page"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Enter valid credentials"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Wait for the redirect"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Expected: redirect within 2 seconds.",
+                "marks": [
+                  {
+                    "type": "em"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Affects Chrome and Firefox"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Not reproducible on staging"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "codeBlock",
+            "attrs": {
+              "language": "bash"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "curl -s -o /dev/null -w '%{time_total}' https://app.example.com/login"
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "See the "
+              },
+              {
+                "type": "text",
+                "text": "runbook",
+                "marks": [
+                  {
+                    "type": "link",
+                    "attrs": {
+                      "href": "https://wiki.example.com/runbooks/login"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " for rollback steps."
+              }
+            ]
+          }
+        ]
+      },
+      "comment": {
+        "comments": [
+          {
+            "self": "https://example.atlassian.net/rest/api/3/issue/10101/comment/10001",
+            "id": "10001",
+            "author": {
+              "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b6a3c1f2d8e4a0b9c7f1e22",
+              "accountId": "5b6a3c1f2d8e4a0b9c7f1e22",
+              "accountType": "atlassian",
+              "emailAddress": "bob.okafor@example.com",
+              "avatarUrls": {
+                "48x48": "https://secure.gravatar.com/avatar/0.png"
+              },
+              "displayName": "Bob Okafor",
+              "active": true,
+              "timeZone": "Europe/Dublin"
+            },
+            "body": {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Seeing this on production since the 2.14 deploy."
+                    }
+                  ]
+                }
+              ]
+            },
+            "updateAuthor": {
+              "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b6a3c1f2d8e4a0b9c7f1e22",
+              "accountId": "5b6a3c1f2d8e4a0b9c7f1e22",
+              "accountType": "atlassian",
+              "emailAddress": "bob.okafor@example.com",
+              "avatarUrls": {
+                "48x48": "https://secure.gravatar.com/avatar/0.png"
+              },
+              "displayName": "Bob Okafor",
+              "active": true,
+              "timeZone": "Europe/Dublin"
+            },
+            "created": "2021-02-03T11:02:10.456+0000",
+            "updated": "2021-02-03T11:02:10.456+0000",
+            "jsdPublic": true
+          },
+          {
+            "self": "https://example.atlassian.net/rest/api/3/issue/10101/comment/10002",
+            "id": "10002",
+            "author": {
+              "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+              "accountId": "5b10ac8d82e05b22cc7d4ef5",
+              "accountType": "atlassian",
+              "emailAddress": "alice.moreau@example.com",
+              "avatarUrls": {
+                "48x48": "https://secure.gravatar.com/avatar/0.png"
+              },
+              "displayName": "Alice Moreau",
+              "active": true,
+              "timeZone": "Europe/Dublin"
+            },
+            "body": {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "5b6a3c1f2d8e4a0b9c7f1e22",
+                        "text": "@Bob Okafor",
+                        "accessLevel": ""
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": " can you attach a HAR file?"
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Internal note: check the session store."
+                    }
+                  ]
+                }
+              ]
+            },
+            "updateAuthor": {
+              "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+              "accountId": "5b10ac8d82e05b22cc7d4ef5",
+              "accountType": "atlassian",
+              "emailAddress": "alice.moreau@example.com",
+              "avatarUrls": {
+                "48x48": "https://secure.gravatar.com/avatar/0.png"
+              },
+              "displayName": "Alice Moreau",
+              "active": true,
+              "timeZone": "Europe/Dublin"
+            },
+            "created": "2021-02-03T14:40:55.001+0000",
+            "updated": "2021-02-03T14:40:55.001+0000",
+            "jsdPublic": true,
+            "visibility": {
+              "type": "role",
+              "value": "Developers",
+              "identifier": "10002"
+            }
+          }
+        ],
+        "self": "https://example.atlassian.net/rest/api/3/issue/10101/comment",
+        "maxResults": 2,
+        "total": 2,
+        "startAt": 0
+      },
+      "worklog": {
+        "startAt": 0,
+        "maxResults": 20,
+        "total": 2,
+        "worklogs": [
+          {
+            "self": "https://example.atlassian.net/rest/api/3/issue/10101/worklog/20001",
+            "author": {
+              "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+              "accountId": "5b10ac8d82e05b22cc7d4ef5",
+              "accountType": "atlassian",
+              "emailAddress": "alice.moreau@example.com",
+              "avatarUrls": {
+                "48x48": "https://secure.gravatar.com/avatar/0.png"
+              },
+              "displayName": "Alice Moreau",
+              "active": true,
+              "timeZone": "Europe/Dublin"
+            },
+            "updateAuthor": {
+              "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+              "accountId": "5b10ac8d82e05b22cc7d4ef5",
+              "accountType": "atlassian",
+              "emailAddress": "alice.moreau@example.com",
+              "avatarUrls": {
+                "48x48": "https://secure.gravatar.com/avatar/0.png"
+              },
+              "displayName": "Alice Moreau",
+              "active": true,
+              "timeZone": "Europe/Dublin"
+            },
+            "created": "2021-02-04T09:00:00.000+0000",
+            "updated": "2021-02-04T09:00:00.000+0000",
+            "started": "2021-02-04T09:00:00.000+0000",
+            "timeSpent": "2h",
+            "timeSpentSeconds": 7200,
+            "id": "20001",
+            "issueId": "10101",
+            "comment": {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Reproduced and profiled the login handler"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "self": "https://example.atlassian.net/rest/api/3/issue/10101/worklog/20002",
+            "author": {
+              "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+              "accountId": "5b10ac8d82e05b22cc7d4ef5",
+              "accountType": "atlassian",
+              "emailAddress": "alice.moreau@example.com",
+              "avatarUrls": {
+                "48x48": "https://secure.gravatar.com/avatar/0.png"
+              },
+              "displayName": "Alice Moreau",
+              "active": true,
+              "timeZone": "Europe/Dublin"
+            },
+            "updateAuthor": {
+              "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+              "accountId": "5b10ac8d82e05b22cc7d4ef5",
+              "accountType": "atlassian",
+              "emailAddress": "alice.moreau@example.com",
+              "avatarUrls": {
+                "48x48": "https://secure.gravatar.com/avatar/0.png"
+              },
+              "displayName": "Alice Moreau",
+              "active": true,
+              "timeZone": "Europe/Dublin"
+            },
+            "created": "2021-02-05T13:30:00.000+0000",
+            "updated": "2021-02-05T13:30:00.000+0000",
+            "started": "2021-02-05T13:30:00.000+0000",
+            "timeSpent": "90m",
+            "timeSpentSeconds": 5400,
+            "id": "20002",
+            "issueId": "10101"
+          }
+        ]
+      },
+      "attachment": [
+        {
+          "self": "https://example.atlassian.net/rest/api/3/attachment/30001",
+          "id": "30001",
+          "filename": "login-trace.har",
+          "author": {
+            "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+            "accountId": "5b10ac8d82e05b22cc7d4ef5",
+            "accountType": "atlassian",
+            "emailAddress": "alice.moreau@example.com",
+            "avatarUrls": {
+              "48x48": "https://secure.gravatar.com/avatar/0.png"
+            },
+            "displayName": "Alice Moreau",
+            "active": true,
+            "timeZone": "Europe/Dublin"
+          },
+          "created": "2021-02-03T15:10:00.000+0000",
+          "size": 48211,
+          "mimeType": "application/json",
+          "content": "https://example.atlassian.net/rest/api/3/attachment/content/30001",
+          "thumbnail": "https://example.atlassian.net/rest/api/3/attachment/thumbnail/30001"
+        },
+        {
+          "self": "https://example.atlassian.net/rest/api/3/attachment/30002",
+          "id": "30002",
+          "filename": "spinner.png",
+          "author": {
+            "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b6a3c1f2d8e4a0b9c7f1e22",
+            "accountId": "5b6a3c1f2d8e4a0b9c7f1e22",
+            "accountType": "atlassian",
+            "emailAddress": "bob.okafor@example.com",
+            "avatarUrls": {
+              "48x48": "https://secure.gravatar.com/avatar/0.png"
+            },
+            "displayName": "Bob Okafor",
+            "active": true,
+            "timeZone": "Europe/Dublin"
+          },
+          "created": "2021-02-03T11:05:00.000+0000",
+          "size": 10394,
+          "mimeType": "image/png",
+          "content": "https://example.atlassian.net/rest/api/3/attachment/content/30002",
+          "thumbnail": "https://example.atlassian.net/rest/api/3/attachment/thumbnail/30002"
+        }
+      ],
+      "issuelinks": [],
+      "customfield_10016": 5
+    },
+    "changelog": {
+      "startAt": 0,
+      "maxResults": 100,
+      "total": 3,
+      "histories": [
+        {
+          "id": "40001",
+          "author": {
+            "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b6a3c1f2d8e4a0b9c7f1e22",
+            "accountId": "5b6a3c1f2d8e4a0b9c7f1e22",
+            "accountType": "atlassian",
+            "emailAddress": "bob.okafor@example.com",
+            "avatarUrls": {
+              "48x48": "https://secure.gravatar.com/avatar/0.png"
+            },
+            "displayName": "Bob Okafor",
+            "active": true,
+            "timeZone": "Europe/Dublin"
+          },
+          "created": "2021-02-03T10:15:22.123+0000",
+          "items": [
+            {
+              "field": "status",
+              "fieldtype": "jira",
+              "fieldId": "status",
+              "from": "10000",
+              "fromString": "To Do",
+              "to": "10001",
+              "toString": "In Progress"
+            }
+          ]
+        },
+        {
+          "id": "40002",
+          "author": {
+            "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+            "accountId": "5b10ac8d82e05b22cc7d4ef5",
+            "accountType": "atlassian",
+            "emailAddress": "alice.moreau@example.com",
+            "avatarUrls": {
+              "48x48": "https://secure.gravatar.com/avatar/0.png"
+            },
+            "displayName": "Alice Moreau",
+            "active": true,
+            "timeZone": "Europe/Dublin"
+          },
+          "created": "2021-02-03T10:20:00.000+0000",
+          "items": [
+            {
+              "field": "assignee",
+              "fieldtype": "jira",
+              "fieldId": "assignee",
+              "from": null,
+              "fromString": null,
+              "to": "5b10ac8d82e05b22cc7d4ef5",
+              "toString": "Alice Moreau"
+            },
+            {
+              "field": "priority",
+              "fieldtype": "jira",
+              "fieldId": "priority",
+              "from": "3",
+              "fromString": "Medium",
+              "to": "2",
+              "toString": "High"
+            }
+          ]
+        },
+        {
+          "id": "40003",
+          "author": {
+            "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+            "accountId": "5b10ac8d82e05b22cc7d4ef5",
+            "accountType": "atlassian",
+            "emailAddress": "alice.moreau@example.com",
+            "avatarUrls": {
+              "48x48": "https://secure.gravatar.com/avatar/0.png"
+            },
+            "displayName": "Alice Moreau",
+            "active": true,
+            "timeZone": "Europe/Dublin"
+          },
+          "created": "2021-02-04T08:55:12.000+0000",
+          "items": [
+            {
+              "field": "labels",
+              "fieldtype": "jira",
+              "fieldId": "labels",
+              "from": null,
+              "fromString": "auth",
+              "to": null,
+              "toString": "auth p1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "expand": "operations,versionedRepresentations,editmeta,changelog,customfield_10010,renderedFields",
+    "id": "10102",
+    "self": "https://example.atlassian.net/rest/api/3/issue/10102",
+    "key": "PLAT-102",
+    "fields": {
+      "summary": "Add audit log export",
+      "issuetype": {
+        "self": "https://example.atlassian.net/rest/api/3/issuetype/10001",
+        "id": "10001",
+        "description": "Functionality or a feature expressed as a user goal.",
+        "iconUrl": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10315",
+        "name": "Story",
+        "subtask": false,
+        "avatarId": 10315
+      },
+      "project": {
+        "self": "https://example.atlassian.net/rest/api/3/project/10000",
+        "id": "10000",
+        "key": "PLAT",
+        "name": "Platform",
+        "projectTypeKey": "software",
+        "simplified": false,
+        "avatarUrls": {
+          "48x48": "https://example.atlassian.net/secure/projectavatar?pid=10000"
+        }
+      },
+      "status": {
+        "self": "https://example.atlassian.net/rest/api/3/status/1",
+        "description": "",
+        "iconUrl": "https://example.atlassian.net/",
+        "name": "Done",
+        "id": "10003",
+        "statusCategory": {
+          "self": "https://example.atlassian.net/rest/api/3/statuscategory/3",
+          "id": 3,
+          "key": "done",
+          "colorName": "green",
+          "name": "Done"
+        }
+      },
+      "priority": {
+        "self": "https://example.atlassian.net/rest/api/3/priority/3",
+        "iconUrl": "https://example.atlassian.net/images/icons/priorities/medium.svg",
+        "name": "Medium",
+        "id": "3"
+      },
+      "assignee": {
+        "self": "https://example.atlassian.net/rest/api/3/user?accountId=712020:6f1d2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
+        "accountId": "712020:6f1d2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
+        "accountType": "atlassian",
+        "emailAddress": "carol.nguyen@example.com",
+        "avatarUrls": {
+          "48x48": "https://secure.gravatar.com/avatar/0.png"
+        },
+        "displayName": "Carol Nguyen",
+        "active": true,
+        "timeZone": "Europe/Dublin"
+      },
+      "reporter": {
+        "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+        "accountId": "5b10ac8d82e05b22cc7d4ef5",
+        "accountType": "atlassian",
+        "emailAddress": "alice.moreau@example.com",
+        "avatarUrls": {
+          "48x48": "https://secure.gravatar.com/avatar/0.png"
+        },
+        "displayName": "Alice Moreau",
+        "active": true,
+        "timeZone": "Europe/Dublin"
+      },
+      "creator": {
+        "self": "https://example.atlassian.net/rest/api/3/user?accountId=5b10ac8d82e05b22cc7d4ef5",
+        "accountId": "5b10ac8d82e05b22cc7d4ef5",
+        "accountType": "atlassian",
+        "emailAddress": "alice.moreau@example.com",
+        "avatarUrls": {
+          "48x48": "https://secure.gravatar.com/avatar/0.png"
+        },
+        "displayName": "Alice Moreau",
+        "active": true,
+        "timeZone": "Europe/Dublin"
+      },
+      "created": "2021-01-20T09:00:00.000+0000",
+      "updated": "2021-02-10T16:45:30.000+0000",
+      "resolution": {
+        "self": "https://example.atlassian.net/rest/api/3/resolution/10000",
+        "id": "10000",
+        "description": "Work has been completed.",
+        "name": "Done"
+      },
+      "resolutiondate": "2021-02-10T16:45:30.000+0000",
+      "duedate": null,
+      "labels": [
+        "compliance"
+      ],
+      "components": [
+        {
+          "self": "https://example.atlassian.net/rest/api/3/component/10000",
+          "id": "10000",
+          "name": "API"
+        },
+        {
+          "self": "https://example.atlassian.net/rest/api/3/component/10000",
+          "id": "10000",
+          "name": "Web"
+        }
+      ],
+      "fixVersions": [
+        {
+          "self": "https://example.atlassian.net/rest/api/3/version/10000",
+          "id": "10000",
+          "name": "2.14",
+          "archived": false,
+          "released": false
+        }
+      ],
+      "description": {
+        "version": 1,
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "As an auditor I can download the audit log as CSV."
+              }
+            ]
+          }
+        ]
+      },
+      "comment": {
+        "comments": [],
+        "self": "https://example.atlassian.net/rest/api/3/issue/10102/comment",
+        "maxResults": 0,
+        "total": 0,
+        "startAt": 0
+      },
+      "worklog": {
+        "startAt": 0,
+        "maxResults": 20,
+        "total": 0,
+        "worklogs": []
+      },
+      "attachment": [],
+      "issuelinks": [],
+      "customfield_10016": 3
+    },
+    "changelog": {
+      "startAt": 0,
+      "maxResults": 100,
+      "total": 1,
+      "histories": [
+        {
+          "id": "40010",
+          "author": {
+            "self": "https://example.atlassian.net/rest/api/3/user?accountId=712020:6f1d2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
+            "accountId": "712020:6f1d2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
+            "accountType": "atlassian",
+            "emailAddress": "carol.nguyen@example.com",
+            "avatarUrls": {
+              "48x48": "https://secure.gravatar.com/avatar/0.png"
+            },
+            "displayName": "Carol Nguyen",
+            "active": true,
+            "timeZone": "Europe/Dublin"
+          },
+          "created": "2021-02-10T16:45:30.000+0000",
+          "items": [
+            {
+              "field": "status",
+              "fieldtype": "jira",
+              "fieldId": "status",
+              "from": "10001",
+              "fromString": "In Progress",
+              "to": "10002",
+              "toString": "Done"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "expand": "operations,versionedRepresentations,editmeta,changelog,customfield_10010,renderedFields",
+    "id": "10103",
+    "self": "https://example.atlassian.net/rest/api/3/issue/10103",
+    "key": "PLAT-103",
+    "fields": {
+      "summary": "Upgrade build image",
+      "issuetype": {
+        "self": "https://example.atlassian.net/rest/api/3/issuetype/10002",
+        "id": "10002",
+        "description": "A small, distinct piece of work.",
+        "iconUrl": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318",
+        "name": "Task",
+        "subtask": false,
+        "avatarId": 10318
+      },
+      "project": {
+        "self": "https://example.atlassian.net/rest/api/3/project/10000",
+        "id": "10000",
+        "key": "PLAT",
+        "name": "Platform",
+        "projectTypeKey": "software",
+        "simplified": false,
+        "avatarUrls": {
+          "48x48": "https://example.atlassian.net/secure/projectavatar?pid=10000"
+        }
+      },
+      "status": {
+        "self": "https://example.atlassian.net/rest/api/3/status/1",
+        "description": "",
+        "iconUrl": "https://example.atlassian.net/",
+        "name": "To Do",
+        "id": "10002",
+        "statusCategory": {
+          "self": "https://example.atlassian.net/rest/api/3/statuscategory/2",
+          "id": 2,
+          "key": "new",
+          "colorName": "blue-gray",
+          "name": "To Do"
+        }
+      },
+      "priority": {
+        "self": "https://example.atlassian.net/rest/api/3/priority/4",
+        "iconUrl": "https://example.atlassian.net/images/icons/priorities/low.svg",
+        "name": "Low",
+        "id": "4"
+      },
+      "assignee": null,
+      "reporter": {
+        "self": "https://example.atlassian.net/rest/api/3/user?accountId=712020:6f1d2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
+        "accountId": "712020:6f1d2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
+        "accountType": "atlassian",
+        "emailAddress": "carol.nguyen@example.com",
+        "avatarUrls": {
+          "48x48": "https://secure.gravatar.com/avatar/0.png"
+        },
+        "displayName": "Carol Nguyen",
+        "active": true,
+        "timeZone": "Europe/Dublin"
+      },
+      "creator": {
+        "self": "https://example.atlassian.net/rest/api/3/user?accountId=712020:6f1d2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
+        "accountId": "712020:6f1d2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
+        "accountType": "atlassian",
+        "emailAddress": "carol.nguyen@example.com",
+        "avatarUrls": {
+          "48x48": "https://secure.gravatar.com/avatar/0.png"
+        },
+        "displayName": "Carol Nguyen",
+        "active": true,
+        "timeZone": "Europe/Dublin"
+      },
+      "created": "2021-02-12T08:30:00.000+0000",
+      "updated": "2021-02-12T08:30:00.000+0000",
+      "resolution": null,
+      "resolutiondate": null,
+      "duedate": null,
+      "labels": [],
+      "components": [],
+      "fixVersions": [],
+      "description": null,
+      "comment": {
+        "comments": [],
+        "self": "https://example.atlassian.net/rest/api/3/issue/10103/comment",
+        "maxResults": 0,
+        "total": 0,
+        "startAt": 0
+      },
+      "worklog": {
+        "startAt": 0,
+        "maxResults": 20,
+        "total": 0,
+        "worklogs": []
+      },
+      "attachment": [],
+      "issuelinks": [],
+      "customfield_10016": null
+    }
+  }
+]
