@@ -7,6 +7,10 @@ tests can replay recorded JSON.
 Status: just started. First goal is a flat CSV of the common fields, then comments,
 changelog, worklogs and attachments.
 
+## Usage
+
+    python -m jiraexport --jql 'project = PLAT ORDER BY created' -o issues.csv
+
 ## Configuration
 
     export JIRA_URL=https://example.atlassian.net
