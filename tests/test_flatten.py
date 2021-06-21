@@ -32,6 +32,12 @@ class FlattenTests(unittest.TestCase):
         self.assertEqual(row["description"], "")
         self.assertEqual(row["labels"], "")
 
+    def test_description_is_plain_text(self):
+        description = self.rows["PLAT-101"]["description"]
+        self.assertTrue(description.startswith("Summary\nUsers on the login page"))
+        self.assertNotIn("{", description.splitlines()[0])
+        self.assertEqual(self.rows["PLAT-102"]["description"], "As an auditor I can download the audit log as CSV.")
+
     def test_resolution(self):
         self.assertEqual(self.rows["PLAT-102"]["resolution"], "Done")
 
