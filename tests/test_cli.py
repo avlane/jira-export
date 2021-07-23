@@ -35,6 +35,20 @@ class CliTests(unittest.TestCase):
         self.assertEqual(text, "")
         self.assertEqual(len(rows), 3)
 
+    def test_comments_sidecar(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "issues.csv")
+            code, _, _ = run(["--jql", "project = PLAT", "-o", path, "--comments"])
+            with open(os.path.join(tmp, "issues-comments.csv"), newline="", encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle))
+        self.assertEqual(code, 0)
+        self.assertEqual([(r["issue"], r["author"]) for r in rows], [("PLAT-101", "Bob Okafor"), ("PLAT-101", "Alice Moreau")])
+
+    def test_comments_need_an_output_file(self):
+        code, _, err = run(["--jql", "project = PLAT", "--comments"])
+        self.assertEqual(code, 2)
+        self.assertIn("--output", err)
+
     def test_api_error_exit_code(self):
         session = FakeSession().add("GET", r"/search$", FakeResponse(400, {"errorMessages": ["Error in the JQL Query"]}))
         code, _, err = run(["--jql", "project ="], session)

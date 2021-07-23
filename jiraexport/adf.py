@@ -49,6 +49,8 @@ def _inline(nodes):
             parts.append(node.get("text", ""))
         elif kind == "hardBreak":
             parts.append("\n")
+        elif kind == "mention":
+            parts.append((node.get("attrs") or {}).get("text", "@someone"))
         elif node.get("content"):
             parts.append(_inline(node["content"]))
     return "".join(parts)
