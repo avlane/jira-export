@@ -35,6 +35,13 @@ class CliTests(unittest.TestCase):
         self.assertEqual(text, "")
         self.assertEqual(len(rows), 3)
 
+    def test_json_format(self):
+        import json
+        code, text, _ = run(["--jql", "project = PLAT", "--format", "json"])
+        data = json.loads(text)
+        self.assertEqual([r["key"] for r in data], ["PLAT-101", "PLAT-102", "PLAT-103"])
+        self.assertEqual(data[0]["labels"], "auth, p1")
+
     def test_comments_sidecar(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "issues.csv")

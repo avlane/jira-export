@@ -11,6 +11,7 @@ def build_parser():
     parser = argparse.ArgumentParser(prog="jira-export", description="Export Jira Cloud issues selected by JQL.")
     parser.add_argument("--jql", required=True, help="JQL query selecting the issues")
     parser.add_argument("--output", "-o", help="file to write (default: standard output)")
+    parser.add_argument("--format", "-f", choices=("csv", "json"), default="csv", help="output format (default csv)")
     parser.add_argument("--comments", action="store_true",
                         help="also write every comment to <output>-comments.csv (needs --output)")
     return parser
@@ -42,14 +43,15 @@ def main(argv=None, client=None, out=None):
                 yield flatten(issue)
 
         rows = rows_for()
+        write = writers.writer_for(args.format)
         if args.output:
             with open(args.output, "w", newline="", encoding="utf-8") as handle:
-                count = writers.write_csv(rows, COLUMNS, handle)
+                count = write(rows, COLUMNS, handle)
             if args.comments:
                 with open(sidecar_path(args.output, "comments"), "w", newline="", encoding="utf-8") as handle:
                     writers.write_csv(found, comments.COLUMNS, handle)
         else:
-            count = writers.write_csv(rows, COLUMNS, out if out is not None else sys.stdout)
+            count = write(rows, COLUMNS, out if out is not None else sys.stdout)
     except (config.ConfigError, JiraError) as exc:
         print("error: {}".format(exc), file=sys.stderr)
         return 2
