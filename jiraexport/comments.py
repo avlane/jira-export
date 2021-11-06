@@ -1,5 +1,6 @@
 """Issue comments."""
 from .adf import to_text
+from .flatten import normalise_timestamp
 
 PAGE = 100
 
@@ -27,6 +28,6 @@ def rows(issue_key, comments):
     for c in comments:
         visibility = c.get("visibility") or {}
         out.append({"issue": issue_key, "id": c["id"], "author": (c.get("author") or {}).get("displayName", ""),
-                    "created": c.get("created", ""), "updated": c.get("updated", ""),
+                    "created": normalise_timestamp(c.get("created")), "updated": normalise_timestamp(c.get("updated")),
                     "visibility": visibility.get("value", ""), "body": to_text(c.get("body"))})
     return out

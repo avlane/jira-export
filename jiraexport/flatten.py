@@ -1,4 +1,6 @@
 """Turn a raw issue into a flat row of strings."""
+import re
+
 from .adf import to_text
 
 COLUMNS = ("key", "summary", "issuetype", "status", "priority", "assignee", "reporter", "created", "updated",
@@ -27,8 +29,8 @@ def flatten(issue):
         "priority": _name(f.get("priority")),
         "assignee": _person(f.get("assignee")),
         "reporter": _person(f.get("reporter")),
-        "created": f.get("created") or "",
-        "updated": f.get("updated") or "",
+        "created": normalise_timestamp(f.get("created")),
+        "updated": normalise_timestamp(f.get("updated")),
         "resolution": _name(f.get("resolution")),
         "labels": ", ".join(f.get("labels") or []),
         "components": _names(f.get("components")),
@@ -36,3 +38,11 @@ def flatten(issue):
         "project": (f.get("project") or {}).get("key", ""),
         "description": to_text(f.get("description")),
     }
+
+
+_OFFSET = re.compile(r"([+-]\d{2})(\d{2})$")
+
+
+def normalise_timestamp(value):
+    """Jira writes offsets as +0000; ISO 8601 (and pandas, and Excel's importers) want +00:00."""
+    return _OFFSET.sub(r"\1:\2", value) if value else ""

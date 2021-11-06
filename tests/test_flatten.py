@@ -38,6 +38,12 @@ class FlattenTests(unittest.TestCase):
         self.assertNotIn("{", description.splitlines()[0])
         self.assertEqual(self.rows["PLAT-102"]["description"], "As an auditor I can download the audit log as CSV.")
 
+    def test_timestamps_use_iso_offsets(self):
+        self.assertEqual(self.rows["PLAT-101"]["created"], "2021-02-03T10:15:22.123+00:00")
+        self.assertEqual(flatten.normalise_timestamp("2021-02-03T10:15:22.123-0530"), "2021-02-03T10:15:22.123-05:30")
+        self.assertEqual(flatten.normalise_timestamp("2021-02-03T10:15:22.123+00:00"), "2021-02-03T10:15:22.123+00:00")
+        self.assertEqual(flatten.normalise_timestamp(None), "")
+
     def test_resolution(self):
         self.assertEqual(self.rows["PLAT-102"]["resolution"], "Done")
 
