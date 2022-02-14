@@ -2,9 +2,15 @@
 import argparse
 import sys
 
-from . import comments, config, issues, writers
+from . import comments, config, issues, worklogs, writers
 from .client import JiraClient, JiraError
 from .flatten import COLUMNS, flatten
+
+# name -> (extra search fields, sidecar columns, collector)
+EXTRAS = {
+    "comments": (("comment",), comments.COLUMNS, lambda client, issue: comments.rows(issue["key"], comments.fetch(client, issue))),
+    "worklogs": (("worklog",), worklogs.COLUMNS, lambda client, issue: worklogs.rows(issue["key"], worklogs.fetch(client, issue))),
+}
 
 
 def build_parser():
@@ -14,6 +20,8 @@ def build_parser():
     parser.add_argument("--format", "-f", choices=("csv", "json"), default="csv", help="output format (default csv)")
     parser.add_argument("--comments", action="store_true",
                         help="also write every comment to <output>-comments.csv (needs --output)")
+    parser.add_argument("--worklogs", action="store_true",
+                        help="also write every worklog to <output>-worklogs.csv (needs --output)")
     return parser
 
 
@@ -29,29 +37,30 @@ def sidecar_path(output, name):
 
 def main(argv=None, client=None, out=None):
     args = build_parser().parse_args(argv)
-    if args.comments and not args.output:
-        print("error: --comments needs --output", file=sys.stderr)
+    selected = [name for name in EXTRAS if getattr(args, name)]
+    if selected and not args.output:
+        print("error: --{} needs --output".format(selected[0]), file=sys.stderr)
         return 2
     try:
         client = client or make_client()
-        found = []
+        found = {name: [] for name in selected}
+        fields = issues.DEFAULT_FIELDS + tuple(f for name in selected for f in EXTRAS[name][0])
 
         def rows_for():
-            for issue in issues.search(client, args.jql, fields=issues.DEFAULT_FIELDS + (("comment",) if args.comments else ())):
-                if args.comments:
-                    found.extend(comments.rows(issue["key"], comments.fetch(client, issue)))
+            for issue in issues.search(client, args.jql, fields=fields):
+                for name in selected:
+                    found[name].extend(EXTRAS[name][2](client, issue))
                 yield flatten(issue)
 
-        rows = rows_for()
         write = writers.writer_for(args.format)
         if args.output:
             with open(args.output, "w", newline="", encoding="utf-8") as handle:
-                count = write(rows, COLUMNS, handle)
-            if args.comments:
-                with open(sidecar_path(args.output, "comments"), "w", newline="", encoding="utf-8") as handle:
-                    writers.write_csv(found, comments.COLUMNS, handle)
+                count = write(rows_for(), COLUMNS, handle)
+            for name in selected:
+                with open(sidecar_path(args.output, name), "w", newline="", encoding="utf-8") as handle:
+                    writers.write_csv(found[name], EXTRAS[name][1], handle)
         else:
-            count = write(rows, COLUMNS, out if out is not None else sys.stdout)
+            count = write(rows_for(), COLUMNS, out if out is not None else sys.stdout)
     except (config.ConfigError, JiraError) as exc:
         print("error: {}".format(exc), file=sys.stderr)
         return 2

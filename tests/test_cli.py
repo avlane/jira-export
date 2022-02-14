@@ -51,6 +51,15 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual([(r["issue"], r["author"]) for r in rows], [("PLAT-101", "Bob Okafor"), ("PLAT-101", "Alice Moreau")])
 
+    def test_worklogs_sidecar(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "issues.csv")
+            code, _, _ = run(["--jql", "project = PLAT", "-o", path, "--worklogs", "--comments"])
+            self.assertEqual(sorted(os.listdir(tmp)), ["issues-comments.csv", "issues-worklogs.csv", "issues.csv"])
+            with open(os.path.join(tmp, "issues-worklogs.csv"), newline="", encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle))
+        self.assertEqual([(r["issue"], r["timeSpentSeconds"]) for r in rows], [("PLAT-101", "7200"), ("PLAT-101", "5400")])
+
     def test_comments_need_an_output_file(self):
         code, _, err = run(["--jql", "project = PLAT", "--comments"])
         self.assertEqual(code, 2)
