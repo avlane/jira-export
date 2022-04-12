@@ -19,6 +19,10 @@ Options:
 | `-o`, `--output` | file to write; standard output if omitted |
 | `-f`, `--format` | `csv` (default) or `json` |
 | `--comments` | also write `<output>-comments.csv` with every comment |
+| `--worklogs` | also write `<output>-worklogs.csv` with every worklog |
+| `--attachments` | also write `<output>-attachments.csv` with attachment metadata |
+| `--download-attachments DIR` | save the files under `DIR/<issue key>/` as `<id>-<filename>` |
+| `--max-attachment-mb N` | skip downloading anything larger |
 
 Rich text (descriptions, comments) is converted from Atlassian Document Format to plain
 text. Timestamps are written as ISO 8601 with a colon in the offset.

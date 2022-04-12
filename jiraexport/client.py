@@ -40,16 +40,20 @@ class JiraClient:
             return path
         return self.base_url + self.API + path.lstrip("/")
 
-    def request(self, method, path, params=None, body=None, expected=(200,)):
-        url = self.url(path)
+    def _send(self, method, url, **kwargs):
+        """One request, retried while Jira answers 429."""
         attempt = 0
         while True:
-            resp = self.session.request(method, url, params=params, json=body, timeout=self.timeout)
+            resp = self.session.request(method, url, timeout=self.timeout, **kwargs)
             if resp.status_code == 429 and attempt < self.max_retries:
                 attempt += 1
                 self.sleep(retry_after(resp))
                 continue
-            break
+            return resp
+
+    def request(self, method, path, params=None, body=None, expected=(200,)):
+        url = self.url(path)
+        resp = self._send(method, url, params=params, json=body)
         if resp.status_code not in expected:
             raise JiraError("{} {} failed with HTTP {}: {}".format(method, url, resp.status_code, resp.text[:200]),
                             resp.status_code, url)
@@ -59,3 +63,16 @@ class JiraClient:
 
     def get(self, path, params=None):
         return self.request("GET", path, params=params)
+
+    def download(self, path, dest, chunk_size=65536):
+        """Stream a file (an attachment's content URL) to dest and return the number of bytes written."""
+        url = self.url(path)
+        resp = self._send("GET", url, stream=True)
+        if resp.status_code != 200:
+            raise JiraError("GET {} failed with HTTP {}".format(url, resp.status_code), resp.status_code, url)
+        written = 0
+        with open(dest, "wb") as handle:
+            for chunk in resp.iter_content(chunk_size):
+                handle.write(chunk)
+                written += len(chunk)
+        return written

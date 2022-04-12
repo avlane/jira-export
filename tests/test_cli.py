@@ -60,6 +60,20 @@ class CliTests(unittest.TestCase):
                 rows = list(csv.DictReader(handle))
         self.assertEqual([(r["issue"], r["timeSpentSeconds"]) for r in rows], [("PLAT-101", "7200"), ("PLAT-101", "5400")])
 
+    def test_attachments_metadata_and_download(self):
+        session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
+        session.add("GET", r"/attachment/content/\d+$", FakeResponse(200, "file body"))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "issues.csv")
+            files = os.path.join(tmp, "files")
+            code, _, _ = run(["--jql", "project = PLAT", "-o", path, "--download-attachments", files, "--max-attachment-mb", "0.02"], session)
+            with open(os.path.join(tmp, "issues-attachments.csv"), newline="", encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle))
+            saved = os.listdir(os.path.join(files, "PLAT-101"))
+        self.assertEqual(code, 0)
+        self.assertTrue(rows[0]["saved_as"].startswith("skipped"))
+        self.assertEqual(saved, ["30002-spinner.png"])
+
     def test_comments_need_an_output_file(self):
         code, _, err = run(["--jql", "project = PLAT", "--comments"])
         self.assertEqual(code, 2)

@@ -2,7 +2,9 @@
 import argparse
 import sys
 
-from . import comments, config, issues, worklogs, writers
+import os
+
+from . import attachments, comments, config, issues, worklogs, writers
 from .client import JiraClient, JiraError
 from .flatten import COLUMNS, flatten
 
@@ -10,6 +12,7 @@ from .flatten import COLUMNS, flatten
 EXTRAS = {
     "comments": (("comment",), comments.COLUMNS, lambda client, issue: comments.rows(issue["key"], comments.fetch(client, issue))),
     "worklogs": (("worklog",), worklogs.COLUMNS, lambda client, issue: worklogs.rows(issue["key"], worklogs.fetch(client, issue))),
+    "attachments": (("attachment",), attachments.COLUMNS, None),
 }
 
 
@@ -22,6 +25,10 @@ def build_parser():
                         help="also write every comment to <output>-comments.csv (needs --output)")
     parser.add_argument("--worklogs", action="store_true",
                         help="also write every worklog to <output>-worklogs.csv (needs --output)")
+    parser.add_argument("--attachments", action="store_true",
+                        help="also write attachment metadata to <output>-attachments.csv (needs --output)")
+    parser.add_argument("--download-attachments", metavar="DIR", help="save attachment files under DIR/<issue key>/ (implies --attachments)")
+    parser.add_argument("--max-attachment-mb", type=float, help="skip attachments larger than this")
     return parser
 
 
@@ -35,21 +42,37 @@ def sidecar_path(output, name):
     return "{}-{}.{}".format(stem, name, ext) if dot else "{}-{}".format(output, name)
 
 
+def attachment_collector(args):
+    max_bytes = int(args.max_attachment_mb * 1024 * 1024) if args.max_attachment_mb else None
+
+    def collect(client, issue):
+        files = issue["fields"].get("attachment") or []
+        notes = {}
+        if args.download_attachments:
+            notes = attachments.download_all(client, issue["key"], files, args.download_attachments, max_bytes)
+        return attachments.rows(issue["key"], files, notes)
+    return collect
+
+
 def main(argv=None, client=None, out=None):
     args = build_parser().parse_args(argv)
+    if args.download_attachments:
+        args.attachments = True
     selected = [name for name in EXTRAS if getattr(args, name)]
     if selected and not args.output:
         print("error: --{} needs --output".format(selected[0]), file=sys.stderr)
         return 2
     try:
         client = client or make_client()
+        collectors = {name: EXTRAS[name][2] for name in selected}
+        collectors["attachments"] = attachment_collector(args)
         found = {name: [] for name in selected}
         fields = issues.DEFAULT_FIELDS + tuple(f for name in selected for f in EXTRAS[name][0])
 
         def rows_for():
             for issue in issues.search(client, args.jql, fields=fields):
                 for name in selected:
-                    found[name].extend(EXTRAS[name][2](client, issue))
+                    found[name].extend(collectors[name](client, issue))
                 yield flatten(issue)
 
         write = writers.writer_for(args.format)

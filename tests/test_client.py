@@ -27,6 +27,40 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(session.calls[0]["url"], "https://example.atlassian.net/rest/api/3/attachment/content/1")
 
 
+class DownloadTests(unittest.TestCase):
+    def test_streams_to_a_file(self):
+        import os
+        import tempfile
+        session = FakeSession().add("GET", r"/attachment/content/1$", FakeResponse(200, "x" * 200000))
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = os.path.join(tmp, "out.bin")
+            written = make(session).download("https://example.atlassian.net/rest/api/3/attachment/content/1", dest)
+            with open(dest, "rb") as handle:
+                self.assertEqual(len(handle.read()), 200000)
+        self.assertEqual(written, 200000)
+        self.assertTrue(session.calls[0]["url"].endswith("/attachment/content/1"))
+
+    def test_errors_are_reported(self):
+        import os
+        import tempfile
+        session = FakeSession().add("GET", r"/attachment/content/1$", FakeResponse(404, "gone"))
+        with tempfile.TemporaryDirectory() as tmp, self.assertRaises(JiraError) as ctx:
+            make(session).download("https://example.atlassian.net/rest/api/3/attachment/content/1", os.path.join(tmp, "x"))
+        self.assertEqual(ctx.exception.status, 404)
+        self.assertEqual(os.listdir(tmp) if os.path.exists(tmp) else [], [])
+
+    def test_downloads_retry_on_429(self):
+        import os
+        import tempfile
+        limited = FakeResponse(429, None, {"Retry-After": "2"})
+        session = FakeSession().add("GET", r"/content/1$", Seq(limited, FakeResponse(200, "abc")))
+        sleeps = []
+        client = JiraClient("https://example.atlassian.net", session=session, sleep=sleeps.append)
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(client.download("https://example.atlassian.net/content/1", os.path.join(tmp, "f")), 3)
+        self.assertEqual(sleeps, [2])
+
+
 class RateLimitTests(unittest.TestCase):
     def test_retry_after_is_honoured(self):
         limited = FakeResponse(429, None, {"Retry-After": "9"})
