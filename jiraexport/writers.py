@@ -1,29 +1,66 @@
-"""Output formats."""
+"""Output sinks. Rows are written as they arrive so large exports stay in constant memory."""
 import csv
 import json
 
 
+class CsvSink:
+    def __init__(self, stream, columns):
+        self.writer = csv.DictWriter(stream, fieldnames=list(columns), extrasaction="ignore", lineterminator="\n")
+        self.writer.writeheader()
+        self.count = 0
+
+    def write(self, row):
+        self.writer.writerow(row)
+        self.count += 1
+
+    def close(self):
+        pass
+
+
+class JsonlSink:
+    """One JSON object per line."""
+
+    def __init__(self, stream, columns=None):
+        self.stream = stream
+        self.count = 0
+
+    def write(self, row):
+        self.stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+        self.count += 1
+
+    def close(self):
+        pass
+
+
+class JsonSink:
+    """A single JSON array, written element by element."""
+
+    def __init__(self, stream, columns=None):
+        self.stream = stream
+        self.count = 0
+
+    def write(self, row):
+        self.stream.write("[\n" if self.count == 0 else ",\n")
+        self.stream.write(json.dumps(row, indent=2, ensure_ascii=False))
+        self.count += 1
+
+    def close(self):
+        self.stream.write("\n]\n" if self.count else "[]\n")
+
+
+NESTED = ("json", "jsonl")  # formats that can hold comments, worklogs and so on inside each issue
+SINKS = {"csv": CsvSink, "json": JsonSink, "jsonl": JsonlSink}
+
+
+def open_sink(fmt, stream, columns):
+    try:
+        return SINKS[fmt](stream, columns)
+    except KeyError:
+        raise ValueError("unknown format {!r}".format(fmt))
+
+
 def write_csv(rows, columns, stream):
-    writer = csv.DictWriter(stream, fieldnames=list(columns), extrasaction="ignore", lineterminator="\n")
-    writer.writeheader()
-    count = 0
+    sink = CsvSink(stream, columns)
     for row in rows:
-        writer.writerow(row)
-        count += 1
-    return count
-
-
-def write_json(rows, stream):
-    """Write all rows as one JSON array."""
-    rows = list(rows)
-    json.dump(rows, stream, indent=2, ensure_ascii=False)
-    stream.write("\n")
-    return len(rows)
-
-
-def writer_for(fmt):
-    if fmt == "csv":
-        return lambda rows, columns, stream: write_csv(rows, columns, stream)
-    if fmt == "json":
-        return lambda rows, columns, stream: write_json(rows, stream)
-    raise ValueError("unknown format {!r}".format(fmt))
+        sink.write(row)
+    return sink.count

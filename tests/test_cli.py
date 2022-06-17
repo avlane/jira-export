@@ -42,6 +42,17 @@ class CliTests(unittest.TestCase):
         self.assertEqual([r["key"] for r in data], ["PLAT-101", "PLAT-102", "PLAT-103"])
         self.assertEqual(data[0]["labels"], "auth, p1")
 
+    def test_jsonl_nests_the_extras(self):
+        import json
+        code, text, _ = run(["--jql", "project = PLAT", "--format", "jsonl", "--comments", "--worklogs", "--attachments"])
+        self.assertEqual(code, 0)
+        records = [json.loads(line) for line in text.splitlines()]
+        self.assertEqual(len(records), 3)
+        self.assertEqual([c["author"] for c in records[0]["comments"]], ["Bob Okafor", "Alice Moreau"])
+        self.assertEqual(len(records[0]["worklogs"]), 2)
+        self.assertEqual(len(records[0]["attachments"]), 2)
+        self.assertEqual(records[2]["comments"], [])
+
     def test_comments_sidecar(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "issues.csv")
