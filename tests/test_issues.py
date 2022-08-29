@@ -31,6 +31,24 @@ class SearchTests(unittest.TestCase):
         self.assertEqual(params["expand"], "changelog,names")
         self.assertEqual(params["jql"], "project = NONE")
 
+    def test_long_queries_are_posted(self):
+        session = FakeSession().add("POST", r"/rest/api/3/search$", search_handler(load("issues.json")))
+        client = JiraClient("https://example.atlassian.net", session=session)
+        jql = "issue in ({}) ORDER BY key".format(",".join("PLAT-%d" % n for n in range(400)))
+        got = list(issues.search(client, jql, fields=("summary",), expand=("changelog",), page_size=2))
+        self.assertEqual(len(got), 3)
+        self.assertEqual(session.calls_to("GET", "/search"), [])
+        body = session.calls[0]["json"]
+        self.assertEqual(body["jql"], jql)
+        self.assertEqual(body["fields"], ["summary"])
+        self.assertEqual(body["expand"], ["changelog"])
+        self.assertEqual([c["json"]["startAt"] for c in session.calls], [0, 2])
+
+    def test_short_queries_stay_on_get(self):
+        client, session = make(search_handler([]))
+        list(issues.search(client, "project = PLAT"))
+        self.assertEqual(session.calls[0]["method"], "GET")
+
     def test_no_matches(self):
         client, session = make(search_handler([]))
         self.assertEqual(list(issues.search(client, "project = NONE")), [])
