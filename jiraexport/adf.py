@@ -22,40 +22,44 @@ def _block(node, depth):
     kind = node.get("type")
     children = node.get("content") or []
     attrs = node.get("attrs") or {}
-    if kind in ("bulletList", "orderedList"):
-        out = []
-        number = int(attrs.get("order", 1))
-        for item in children:
-            marker = "- " if kind == "bulletList" else "{}. ".format(number)
-            number += 1
-            inner = _blocks(item.get("content") or [], depth + 1)
-            first = inner[0] if inner else ""
-            out.append("  " * depth + marker + first)
-            out.extend(inner[1:])
-        return out
-    if kind == "rule":
-        return ["---"]
-    if kind in ("paragraph", "heading"):
-        return _inline(children).split("\n")
-    if kind == "codeBlock":
-        return ["    " + line for line in _inline(children).split("\n")]
-    if kind == "blockquote":
-        return ["> " + line for line in _blocks(children, depth)]
-    if kind == "panel":
-        lines = _blocks(children, depth)
-        if lines:
-            lines[0] = "[{}] {}".format(attrs.get("panelType", "info"), lines[0])
-        return lines
-    if kind == "table":
-        return [" | ".join(_cell_text(cell) for cell in row.get("content") or []) for row in children]
-    if kind in ("mediaSingle", "mediaGroup"):
-        return [_inline(children)]
-    if kind in ("expand", "nestedExpand"):
-        return ([attrs["title"]] if attrs.get("title") else []) + _blocks(children, depth)
-    # Containers and anything unknown: keep whatever text they hold.
-    if children:
-        return _blocks(children, depth)
-    return [_inline([node])] if kind == "text" else []
+    match kind:
+        case "bulletList" | "orderedList":
+            return _list(kind, children, int(attrs.get("order", 1)), depth)
+        case "rule":
+            return ["---"]
+        case "paragraph" | "heading":
+            return _inline(children).split("\n")
+        case "codeBlock":
+            return ["    " + line for line in _inline(children).split("\n")]
+        case "blockquote":
+            return ["> " + line for line in _blocks(children, depth)]
+        case "panel":
+            lines = _blocks(children, depth)
+            if lines:
+                lines[0] = "[{}] {}".format(attrs.get("panelType", "info"), lines[0])
+            return lines
+        case "table":
+            return [" | ".join(_cell_text(cell) for cell in row.get("content") or []) for row in children]
+        case "mediaSingle" | "mediaGroup":
+            return [_inline(children)]
+        case "expand" | "nestedExpand":
+            return ([attrs["title"]] if attrs.get("title") else []) + _blocks(children, depth)
+        case "text":
+            return [_inline([node])]
+        case _:
+            # Containers and anything unknown: keep whatever text they hold.
+            return _blocks(children, depth) if children else []
+
+
+def _list(kind, items, number, depth):
+    out = []
+    for item in items:
+        marker = "- " if kind == "bulletList" else "{}. ".format(number)
+        number += 1
+        inner = _blocks(item.get("content") or [], depth + 1)
+        out.append("  " * depth + marker + (inner[0] if inner else ""))
+        out.extend(inner[1:])
+    return out
 
 
 def _cell_text(cell):
@@ -65,26 +69,27 @@ def _cell_text(cell):
 def _inline(nodes):
     parts = []
     for node in nodes:
-        kind = node.get("type")
         attrs = node.get("attrs") or {}
-        if kind == "text":
-            parts.append(_text_with_marks(node))
-        elif kind == "hardBreak":
-            parts.append("\n")
-        elif kind == "mention":
-            parts.append(attrs.get("text", "@someone"))
-        elif kind == "emoji":
-            parts.append(attrs.get("text") or attrs.get("shortName", ""))
-        elif kind == "inlineCard":
-            parts.append(attrs.get("url", ""))
-        elif kind == "status":
-            parts.append("[{}]".format(attrs.get("text", "")))
-        elif kind == "date":
-            parts.append(_date(attrs.get("timestamp")))
-        elif kind == "media":
-            parts.append("[media: {}]".format(attrs.get("alt") or attrs.get("id", "")))
-        elif node.get("content"):
-            parts.append(_inline(node["content"]))
+        match node.get("type"):
+            case "text":
+                parts.append(_text_with_marks(node))
+            case "hardBreak":
+                parts.append("\n")
+            case "mention":
+                parts.append(attrs.get("text", "@someone"))
+            case "emoji":
+                parts.append(attrs.get("text") or attrs.get("shortName", ""))
+            case "inlineCard":
+                parts.append(attrs.get("url", ""))
+            case "status":
+                parts.append("[{}]".format(attrs.get("text", "")))
+            case "date":
+                parts.append(_date(attrs.get("timestamp")))
+            case "media":
+                parts.append("[media: {}]".format(attrs.get("alt") or attrs.get("id", "")))
+            case _:
+                if node.get("content"):
+                    parts.append(_inline(node["content"]))
     return "".join(parts)
 
 
