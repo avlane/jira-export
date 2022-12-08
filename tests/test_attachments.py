@@ -32,6 +32,24 @@ class AttachmentTests(unittest.TestCase):
         rows = attachments.rows("PLAT-101", attached(), notes)
         self.assertTrue(rows[0]["saved_as"].endswith("30001-login-trace.har"))
 
+    def test_hostile_filenames_stay_inside_the_folder(self):
+        evil = [{"id": "1", "filename": "../../etc/cron.d/job", "size": 1, "content": "https://example.atlassian.net/rest/api/3/attachment/content/1"},
+                {"id": "2", "filename": "..\\..\\boot.ini", "size": 1, "content": "https://example.atlassian.net/rest/api/3/attachment/content/2"},
+                {"id": "3", "filename": "..", "size": 1, "content": "https://example.atlassian.net/rest/api/3/attachment/content/3"}]
+        session = FakeSession().add("GET", r"/attachment/content/\d+$", FakeResponse(200, "x"))
+        with tempfile.TemporaryDirectory() as tmp:
+            notes = attachments.download_all(make_client(session), "PLAT-1", evil, tmp)
+            inside = sorted(os.listdir(os.path.join(tmp, "PLAT-1")))
+            self.assertEqual(os.listdir(tmp), ["PLAT-1"])
+        self.assertEqual(inside, ["1-job", "2-boot.ini", "3-attachment"])
+        self.assertTrue(all(note.startswith(tmp) for note in notes.values()))
+
+    def test_safe_filename(self):
+        self.assertEqual(attachments.safe_filename("report final.pdf"), "report final.pdf")
+        self.assertEqual(attachments.safe_filename("a/b/c.txt"), "c.txt")
+        self.assertEqual(attachments.safe_filename("tab\there.txt"), "tab_here.txt")
+        self.assertEqual(attachments.safe_filename(""), "attachment")
+
     def test_size_limit(self):
         session = FakeSession().add("GET", r"/attachment/content/\d+$", FakeResponse(200, "x"))
         with tempfile.TemporaryDirectory() as tmp:

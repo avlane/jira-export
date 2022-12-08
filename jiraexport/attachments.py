@@ -7,8 +7,16 @@ from .flatten import normalise_timestamp
 COLUMNS = ("issue", "id", "filename", "size", "mimeType", "created", "author", "saved_as")
 
 
+def safe_filename(name):
+    """A name that cannot escape the target folder: no directories, no control characters."""
+    name = name.replace("\\", "/").rsplit("/", 1)[-1]
+    name = "".join(ch if ch.isprintable() else "_" for ch in name).strip(" .")
+    return name or "attachment"
+
+
 def local_name(attachment):
-    return "{}-{}".format(attachment["id"], attachment["filename"])
+    # The id keeps two attachments with the same filename apart.
+    return "{}-{}".format(attachment["id"], safe_filename(attachment["filename"]))
 
 
 def download_all(client, issue_key, attachments, dest_dir, max_bytes=None):
