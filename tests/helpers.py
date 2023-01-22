@@ -121,3 +121,18 @@ def search_handler(issues, cap=100, names=None):
             body["names"] = names
         return body
     return handler
+
+
+def since_handler(issues):
+    """Search stand-in that honours an `updated >= "YYYY-MM-DD HH:mm"` clause (compares the wall-clock part)."""
+    import re
+
+    def handler(call):
+        jql = call["params"]["jql"]
+        found = re.search(r'updated >= "(\d{4}-\d{2}-\d{2} \d{2}:\d{2})"', jql)
+        picked = issues
+        if found:
+            stamp = found.group(1)
+            picked = [i for i in issues if i["fields"]["updated"][:16].replace("T", " ") >= stamp]
+        return search_handler(picked)(call)
+    return handler

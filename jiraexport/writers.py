@@ -4,9 +4,10 @@ import json
 
 
 class CsvSink:
-    def __init__(self, stream, columns):
+    def __init__(self, stream, columns, header=True):
         self.writer = csv.DictWriter(stream, fieldnames=list(columns), extrasaction="ignore", lineterminator="\n")
-        self.writer.writeheader()
+        if header:
+            self.writer.writeheader()
         self.count = 0
 
     def write(self, row):
@@ -20,7 +21,7 @@ class CsvSink:
 class JsonlSink:
     """One JSON object per line."""
 
-    def __init__(self, stream, columns=None):
+    def __init__(self, stream, columns=None, header=True):
         self.stream = stream
         self.count = 0
 
@@ -35,7 +36,7 @@ class JsonlSink:
 class JsonSink:
     """A single JSON array, written element by element."""
 
-    def __init__(self, stream, columns=None):
+    def __init__(self, stream, columns=None, header=True):
         self.stream = stream
         self.count = 0
 
@@ -52,9 +53,10 @@ NESTED = ("json", "jsonl")  # formats that can hold comments, worklogs and so on
 SINKS = {"csv": CsvSink, "json": JsonSink, "jsonl": JsonlSink}
 
 
-def open_sink(fmt, stream, columns):
+def open_sink(fmt, stream, columns, header=True):
+    """header=False is for appending to a CSV that already has one."""
     try:
-        return SINKS[fmt](stream, columns)
+        return SINKS[fmt](stream, columns, header)
     except KeyError:
         raise ValueError("unknown format {!r}".format(fmt))
 

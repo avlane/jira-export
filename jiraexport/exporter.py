@@ -8,7 +8,7 @@ from .flatten import flatten
 Extra = namedtuple("Extra", "name fields columns collect")
 
 
-def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fields=issues.DEFAULT_FIELDS):
+def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fields=issues.DEFAULT_FIELDS, observe=None):
     """Write every matching issue to main_sink; return how many were written.
 
     With nested=True each extra's rows are stored inside the issue row (JSON
@@ -25,4 +25,6 @@ def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fie
                 for item in found:
                     side_sinks[extra.name].write(item)
         main_sink.write(row)
+        if observe is not None:
+            observe(issue)
     return main_sink.count

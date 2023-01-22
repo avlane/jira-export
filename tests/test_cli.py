@@ -7,7 +7,7 @@ import unittest
 
 from jiraexport import cli
 from jiraexport.client import JiraClient
-from tests.helpers import FakeResponse, FakeSession, load, search_handler
+from tests.helpers import FakeResponse, FakeSession, load, search_handler, since_handler
 
 
 def run(argv, session=None):
@@ -70,6 +70,40 @@ class CliTests(unittest.TestCase):
             with open(os.path.join(tmp, "issues-worklogs.csv"), newline="", encoding="utf-8") as handle:
                 rows = list(csv.DictReader(handle))
         self.assertEqual([(r["issue"], r["timeSpentSeconds"]) for r in rows], [("PLAT-101", "7200"), ("PLAT-101", "5400")])
+
+    def test_incremental_second_run_appends_only_new_issues(self):
+        import json
+        everything = load("issues.json")
+        newer = json.loads(json.dumps(everything[2]))
+        newer.update(key="PLAT-104", id="10104")
+        newer["fields"]["updated"] = "2021-02-13T09:00:00.000+0000"
+        with tempfile.TemporaryDirectory() as tmp:
+            path, state = os.path.join(tmp, "issues.csv"), os.path.join(tmp, "state.json")
+            first = FakeSession().add("GET", r"/rest/api/3/search$", since_handler(everything))
+            code, _, _ = run(["--jql", "project = PLAT", "-o", path, "--incremental", state], first)
+            self.assertEqual(code, 0)
+            with open(state, encoding="utf-8") as handle:
+                saved = json.load(handle)
+            self.assertEqual(saved["last_updated"], "2021-02-12T08:30:00.000+00:00")
+            self.assertEqual(first.calls[0]["params"]["jql"], "project = PLAT")
+            second = FakeSession().add("GET", r"/rest/api/3/search$", since_handler(everything + [newer]))
+            code, _, err = run(["--jql", "project = PLAT", "-o", path, "--incremental", state], second)
+            self.assertEqual(second.calls[0]["params"]["jql"], 'project = PLAT AND updated >= "2021-02-12 08:30"')
+            with open(path, newline="", encoding="utf-8") as handle:
+                text = handle.read()
+            with open(state, encoding="utf-8") as handle:
+                saved = json.load(handle)
+        self.assertEqual(text.count("key,summary"), 1)
+        self.assertIn("PLAT-104", text)
+        self.assertEqual(saved["last_updated"], "2021-02-13T09:00:00.000+00:00")
+        self.assertEqual(saved["runs"], 2)
+
+    def test_incremental_needs_a_file_and_an_appendable_format(self):
+        code, _, err = run(["--jql", "project = PLAT", "--incremental", "state.json"])
+        self.assertEqual(code, 2)
+        code, _, err = run(["--jql", "project = PLAT", "-o", "x.json", "-f", "json", "--incremental", "state.json"])
+        self.assertEqual(code, 2)
+        self.assertIn("JSON Lines", err)
 
     def test_attachments_metadata_and_download(self):
         session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))

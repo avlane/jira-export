@@ -1,9 +1,10 @@
 """Command line entry point: jira-export --jql ... --output issues.csv"""
 import argparse
 import contextlib
+import os
 import sys
 
-from . import attachments, comments, config, exporter, worklogs, writers
+from . import attachments, comments, config, exporter, incremental, worklogs, writers
 from .client import JiraClient, JiraError
 from .exporter import Extra
 from .flatten import COLUMNS
@@ -18,6 +19,8 @@ def build_parser():
     parser.add_argument("--worklogs", action="store_true", help="include every worklog")
     parser.add_argument("--attachments", action="store_true", help="include attachment metadata")
     parser.add_argument("--download-attachments", metavar="DIR", help="save attachment files under DIR/<issue key>/ (implies --attachments)")
+    parser.add_argument("--incremental", metavar="STATE_FILE",
+                        help="only export what changed since the last run, appending to --output (CSV or JSON Lines)")
     parser.add_argument("--max-attachment-mb", type=float, help="skip downloading attachments larger than this")
     return parser
 
@@ -53,6 +56,13 @@ def build_extras(args):
     return extras
 
 
+def open_for_output(stack, path, appending, columns_format):
+    """Open an output file; when appending to a non-empty file the CSV header must not be repeated."""
+    header = not (appending and os.path.exists(path) and os.path.getsize(path) > 0)
+    handle = stack.enter_context(open(path, "a" if appending else "w", newline="", encoding="utf-8"))
+    return handle, header
+
+
 def main(argv=None, client=None, out=None):
     args = build_parser().parse_args(argv)
     extras = build_extras(args)
@@ -60,24 +70,39 @@ def main(argv=None, client=None, out=None):
     if extras and not nested and not args.output:
         print("error: --{} needs --output when writing CSV".format(extras[0].name), file=sys.stderr)
         return 2
+    if args.incremental and (not args.output or args.format == "json"):
+        print("error: --incremental needs --output and CSV or JSON Lines (a JSON array cannot be appended to)", file=sys.stderr)
+        return 2
     try:
         client = client or make_client()
+        jql, tracker, appending, previous = args.jql, None, False, None
+        if args.incremental:
+            previous = incremental.load(args.incremental)
+            if previous and previous["jql"] != args.jql:
+                print("warning: the query changed since the last run; exporting everything again", file=sys.stderr)
+                previous = None
+            if previous and previous["last_updated"]:
+                jql, appending = incremental.jql_since(args.jql, previous["last_updated"]), True
+            tracker = previous or incremental.fresh(args.jql)
         with contextlib.ExitStack() as stack:
             if args.output:
-                stream = stack.enter_context(open(args.output, "w", newline="", encoding="utf-8"))
+                stream, header = open_for_output(stack, args.output, appending, args.format)
             else:
-                stream = out if out is not None else sys.stdout
-            main_sink = writers.open_sink(args.format, stream, COLUMNS)
+                stream, header = (out if out is not None else sys.stdout), True
+            main_sink = writers.open_sink(args.format, stream, COLUMNS, header)
             side_sinks = {}
             if not nested:
                 for extra in extras:
-                    handle = stack.enter_context(open(sidecar_path(args.output, extra.name), "w", newline="", encoding="utf-8"))
-                    side_sinks[extra.name] = writers.open_sink("csv", handle, extra.columns)
+                    handle, side_header = open_for_output(stack, sidecar_path(args.output, extra.name), appending, "csv")
+                    side_sinks[extra.name] = writers.open_sink("csv", handle, extra.columns, side_header)
+            seen = []
             try:
-                count = exporter.export(client, args.jql, main_sink, extras, side_sinks, nested)
+                count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append)
             finally:
                 main_sink.close()
-    except (config.ConfigError, JiraError) as exc:
+        if args.incremental:
+            incremental.save(args.incremental, incremental.advance(tracker, seen, count))
+    except (config.ConfigError, incremental.StateError, JiraError) as exc:
         print("error: {}".format(exc), file=sys.stderr)
         return 2
     print("exported {} issues".format(count), file=sys.stderr)
