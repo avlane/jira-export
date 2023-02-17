@@ -97,7 +97,8 @@ def main(argv=None, client=None, out=None):
                     side_sinks[extra.name] = writers.open_sink("csv", handle, extra.columns, side_header)
             seen = []
             try:
-                count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append)
+                skip = (lambda issue: incremental.already_exported(tracker, issue)) if appending else None
+                count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip)
             finally:
                 main_sink.close()
         if args.incremental:

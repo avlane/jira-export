@@ -42,7 +42,19 @@ def jql_since(jql, since):
 
 
 def fresh(jql):
-    return {"version": VERSION, "jql": jql, "last_updated": None, "runs": 0, "exported": 0}
+    return {"version": VERSION, "jql": jql, "last_updated": None, "seen": {}, "runs": 0, "exported": 0}
+
+
+def minute_floor(stamp):
+    return parse(stamp).replace(second=0, microsecond=0)
+
+
+def already_exported(state, issue):
+    """True for an issue the previous run wrote: the JQL window is inclusive and only minute-precise,
+    so the last minute of the previous run is fetched again."""
+    from .flatten import normalise_timestamp
+
+    return state.get("seen", {}).get(issue["key"]) == normalise_timestamp(issue["fields"]["updated"])
 
 
 def advance(state, issues, exported):
@@ -50,8 +62,13 @@ def advance(state, issues, exported):
     from .flatten import normalise_timestamp
 
     latest = state.get("last_updated")
+    seen = dict(state.get("seen", {}))
     for issue in issues:
         stamp = normalise_timestamp(issue["fields"]["updated"])
+        seen[issue["key"]] = stamp
         if latest is None or parse(stamp) > parse(latest):
             latest = stamp
-    return dict(state, last_updated=latest, runs=state.get("runs", 0) + 1, exported=state.get("exported", 0) + exported)
+    if latest is not None:  # only the final minute can be fetched twice
+        floor = minute_floor(latest)
+        seen = {key: stamp for key, stamp in seen.items() if parse(stamp) >= floor}
+    return dict(state, last_updated=latest, seen=seen, runs=state.get("runs", 0) + 1, exported=state.get("exported", 0) + exported)

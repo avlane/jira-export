@@ -32,13 +32,24 @@ class StateFileTests(unittest.TestCase):
         self.assertEqual(got, 'project = PLAT AND updated >= "2021-02-12 08:30"')
 
     def test_advance_moves_to_the_latest_update(self):
-        issues = [{"fields": {"updated": "2021-02-03T10:00:00.000+0000"}}, {"fields": {"updated": "2021-02-05T11:30:00.000+0000"}}]
+        issues = [{"key": "A-1", "fields": {"updated": "2021-02-03T10:00:00.000+0000"}}, {"key": "A-2", "fields": {"updated": "2021-02-05T11:30:00.000+0000"}}]
         state = incremental.advance(incremental.fresh("q"), issues, 2)
         self.assertEqual(state["last_updated"], "2021-02-05T11:30:00.000+00:00")
         self.assertEqual((state["runs"], state["exported"]), (1, 2))
-        again = incremental.advance(state, [{"fields": {"updated": "2021-02-01T00:00:00.000+0000"}}], 1)
+        again = incremental.advance(state, [{"key": "A-3", "fields": {"updated": "2021-02-01T00:00:00.000+0000"}}], 1)
         self.assertEqual(again["last_updated"], "2021-02-05T11:30:00.000+00:00")
         self.assertEqual((again["runs"], again["exported"]), (2, 3))
+
+    def test_only_the_last_minute_is_remembered(self):
+        issues = [{"key": "A-1", "fields": {"updated": "2021-02-03T10:00:10.000+0000"}},
+                  {"key": "A-2", "fields": {"updated": "2021-02-05T11:30:05.000+0000"}},
+                  {"key": "A-3", "fields": {"updated": "2021-02-05T11:30:50.000+0000"}}]
+        state = incremental.advance(incremental.fresh("q"), issues, 3)
+        self.assertEqual(sorted(state["seen"]), ["A-2", "A-3"])
+        self.assertTrue(incremental.already_exported(state, issues[1]))
+        changed = {"key": "A-2", "fields": {"updated": "2021-02-05T11:30:59.000+0000"}}
+        self.assertFalse(incremental.already_exported(state, changed))
+        self.assertFalse(incremental.already_exported(state, issues[0]))
 
     def test_advance_with_nothing_new_keeps_the_marker(self):
         state = dict(incremental.fresh("q"), last_updated="2021-02-05T11:30:00.000+00:00")

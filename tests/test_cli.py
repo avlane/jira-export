@@ -94,7 +94,7 @@ class CliTests(unittest.TestCase):
             with open(state, encoding="utf-8") as handle:
                 saved = json.load(handle)
         self.assertEqual(text.count("key,summary"), 1)
-        self.assertIn("PLAT-104", text)
+        self.assertEqual([r["key"] for r in csv.DictReader(io.StringIO(text))], ["PLAT-101", "PLAT-102", "PLAT-103", "PLAT-104"])
         self.assertEqual(saved["last_updated"], "2021-02-13T09:00:00.000+00:00")
         self.assertEqual(saved["runs"], 2)
 
