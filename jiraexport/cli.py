@@ -4,7 +4,7 @@ import contextlib
 import os
 import sys
 
-from . import attachments, comments, config, exporter, incremental, worklogs, writers
+from . import attachments, changelog, comments, config, exporter, incremental, worklogs, writers
 from .client import JiraClient, JiraError
 from .exporter import Extra
 from .flatten import COLUMNS
@@ -17,6 +17,7 @@ def build_parser():
     parser.add_argument("--format", "-f", choices=sorted(writers.SINKS), default="csv", help="output format (default csv)")
     parser.add_argument("--comments", action="store_true", help="include every comment")
     parser.add_argument("--worklogs", action="store_true", help="include every worklog")
+    parser.add_argument("--changelog", action="store_true", help="include the change history, one row per changed field")
     parser.add_argument("--attachments", action="store_true", help="include attachment metadata")
     parser.add_argument("--download-attachments", metavar="DIR", help="save attachment files under DIR/<issue key>/ (implies --attachments)")
     parser.add_argument("--incremental", metavar="STATE_FILE",
@@ -43,6 +44,9 @@ def build_extras(args):
     if args.worklogs:
         extras.append(Extra("worklogs", ("worklog",), worklogs.COLUMNS,
                             lambda client, issue: worklogs.rows(issue["key"], worklogs.fetch(client, issue))))
+    if args.changelog:
+        extras.append(Extra("changelog", (), changelog.COLUMNS,
+                            lambda client, issue: changelog.rows(issue["key"], changelog.fetch(client, issue)), ("changelog",)))
     if args.attachments or args.download_attachments:
         max_bytes = int(args.max_attachment_mb * 1024 * 1024) if args.max_attachment_mb else None
 

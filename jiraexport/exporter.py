@@ -5,7 +5,7 @@ from . import issues
 from .flatten import flatten
 
 # fields: extra search fields; collect(client, issue) -> list of rows
-Extra = namedtuple("Extra", "name fields columns collect")
+Extra = namedtuple("Extra", "name fields columns collect expand", defaults=((),))
 
 
 def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fields=issues.DEFAULT_FIELDS, observe=None, skip=None):
@@ -15,7 +15,8 @@ def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fie
     formats). Otherwise they go to side_sinks[extra.name], one flat file each.
     """
     wanted = tuple(fields) + tuple(f for extra in extras for f in extra.fields)
-    for issue in issues.search(client, jql, fields=wanted):
+    expand = tuple(e for extra in extras for e in extra.expand)
+    for issue in issues.search(client, jql, fields=wanted, expand=expand):
         if skip is not None and skip(issue):
             continue
         row = flatten(issue)

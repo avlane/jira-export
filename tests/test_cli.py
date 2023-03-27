@@ -42,6 +42,17 @@ class CliTests(unittest.TestCase):
         self.assertEqual([r["key"] for r in data], ["PLAT-101", "PLAT-102", "PLAT-103"])
         self.assertEqual(data[0]["labels"], "auth, p1")
 
+    def test_changelog_sidecar(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "issues.csv")
+            session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
+            code, _, _ = run(["--jql", "project = PLAT", "-o", path, "--changelog"], session)
+            with open(os.path.join(tmp, "issues-changelog.csv"), newline="", encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle))
+        self.assertEqual(code, 0)
+        self.assertEqual([r["issue"] for r in rows], ["PLAT-101"] * 4 + ["PLAT-102"])
+        self.assertEqual(session.calls[0]["params"]["expand"], "changelog")
+
     def test_jsonl_nests_the_extras(self):
         import json
         code, text, _ = run(["--jql", "project = PLAT", "--format", "jsonl", "--comments", "--worklogs", "--attachments"])

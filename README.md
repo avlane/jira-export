@@ -21,6 +21,7 @@ Options:
 | `-f`, `--format` | `csv` (default), `json` (one array) or `jsonl` (one issue per line) |
 | `--comments` | include every comment: `<output>-comments.csv` for CSV, nested in each issue for JSON |
 | `--worklogs` | include every worklog, the same way |
+| `--changelog` | include the change history (one row per changed field), the same way |
 | `--attachments` | include attachment metadata, the same way |
 | `--download-attachments DIR` | save the files under `DIR/<issue key>/` as `<id>-<filename>` |
 | `--max-attachment-mb N` | skip downloading anything larger |
