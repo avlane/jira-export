@@ -44,6 +44,22 @@ class FlattenTests(unittest.TestCase):
         self.assertEqual(flatten.normalise_timestamp("2021-02-03T10:15:22.123+00:00"), "2021-02-03T10:15:22.123+00:00")
         self.assertEqual(flatten.normalise_timestamp(None), "")
 
+    def test_custom_columns(self):
+        from jiraexport.fieldmap import Field
+        issue = load("issues.json")[0]
+        row = flatten.flatten(issue, [Field("customfield_10016", "points"), Field("customfield_99999", "missing")])
+        self.assertEqual(row["points"], "5")
+        self.assertEqual(row["missing"], "")
+
+    def test_render_value(self):
+        render = flatten.render_value
+        self.assertEqual(render(None), "")
+        self.assertEqual(render(8.0), "8")
+        self.assertEqual(render(2.5), "2.5")
+        self.assertEqual(render(True), "true")
+        self.assertEqual(render({"self": "x", "value": "High", "id": "10"}), "High")
+        self.assertEqual(render({"name": "2.15", "id": "5"}), "2.15")
+
     def test_resolution(self):
         self.assertEqual(self.rows["PLAT-102"]["resolution"], "Done")
 

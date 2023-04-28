@@ -4,7 +4,7 @@ import contextlib
 import os
 import sys
 
-from . import attachments, changelog, comments, config, exporter, incremental, worklogs, writers
+from . import attachments, changelog, comments, config, exporter, fieldmap, incremental, worklogs, writers
 from .client import JiraClient, JiraError
 from .exporter import Extra
 from .flatten import COLUMNS
@@ -15,6 +15,8 @@ def build_parser():
     parser.add_argument("--jql", required=True, help="JQL query selecting the issues")
     parser.add_argument("--output", "-o", help="file to write (default: standard output)")
     parser.add_argument("--format", "-f", choices=sorted(writers.SINKS), default="csv", help="output format (default csv)")
+    parser.add_argument("--field", "-F", action="append", default=[], metavar="FIELD[=COLUMN]",
+                        help="add a column for a field, by id or name (repeatable), e.g. 'Story point estimate=points'")
     parser.add_argument("--comments", action="store_true", help="include every comment")
     parser.add_argument("--worklogs", action="store_true", help="include every worklog")
     parser.add_argument("--changelog", action="store_true", help="include the change history, one row per changed field")
@@ -79,6 +81,8 @@ def main(argv=None, client=None, out=None):
         return 2
     try:
         client = client or make_client()
+        custom = fieldmap.resolve(client, args.field)
+        columns = COLUMNS + tuple(f.column for f in custom)
         jql, tracker, appending, previous = args.jql, None, False, None
         if args.incremental:
             previous = incremental.load(args.incremental)
@@ -93,7 +97,7 @@ def main(argv=None, client=None, out=None):
                 stream, header = open_for_output(stack, args.output, appending, args.format)
             else:
                 stream, header = (out if out is not None else sys.stdout), True
-            main_sink = writers.open_sink(args.format, stream, COLUMNS, header)
+            main_sink = writers.open_sink(args.format, stream, columns, header)
             side_sinks = {}
             if not nested:
                 for extra in extras:
@@ -102,12 +106,12 @@ def main(argv=None, client=None, out=None):
             seen = []
             try:
                 skip = (lambda issue: incremental.already_exported(tracker, issue)) if appending else None
-                count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip)
+                count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip, custom=custom)
             finally:
                 main_sink.close()
         if args.incremental:
             incremental.save(args.incremental, incremental.advance(tracker, seen, count))
-    except (config.ConfigError, incremental.StateError, JiraError) as exc:
+    except (config.ConfigError, incremental.StateError, fieldmap.FieldError, JiraError) as exc:
         print("error: {}".format(exc), file=sys.stderr)
         return 2
     print("exported {} issues".format(count), file=sys.stderr)

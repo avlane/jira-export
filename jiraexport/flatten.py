@@ -1,4 +1,5 @@
 """Turn a raw issue into a flat row of strings."""
+import json
 import re
 
 from .adf import to_text
@@ -19,10 +20,34 @@ def _names(items):
     return ", ".join(i.get("name", "") for i in items or [])
 
 
-def flatten(issue):
+def render_value(value):
+    """Text for one field value: strings and numbers as they are, option objects by their label."""
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    if isinstance(value, (int, float, str)):
+        return str(value)
+    if isinstance(value, dict):
+        for key in ("value", "name"):
+            if value.get(key):
+                return str(value[key])
+    return json.dumps(value, sort_keys=True)
+
+
+def flatten(issue, custom=()):
     f = issue["fields"]
+    row = _core(f, issue["key"])
+    for field in custom:
+        row[field.column] = render_value(f.get(field.id))
+    return row
+
+
+def _core(f, key):
     return {
-        "key": issue["key"],
+        "key": key,
         "summary": f.get("summary") or "",
         "issuetype": _name(f.get("issuetype")),
         "status": _name(f.get("status")),

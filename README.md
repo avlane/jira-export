@@ -18,6 +18,7 @@ Options:
 | `--jql` | the query that selects issues (required) |
 | `-o`, `--output` | file to write; standard output if omitted |
 | `--incremental STATE` | export only what changed since the last run and append to `--output` (CSV or JSON Lines) |
+| `-F`, `--field FIELD[=COLUMN]` | add a column for a custom field by id or name (repeatable) |
 | `-f`, `--format` | `csv` (default), `json` (one array) or `jsonl` (one issue per line) |
 | `--comments` | include every comment: `<output>-comments.csv` for CSV, nested in each issue for JSON |
 | `--worklogs` | include every worklog, the same way |

@@ -42,6 +42,23 @@ class CliTests(unittest.TestCase):
         self.assertEqual([r["key"] for r in data], ["PLAT-101", "PLAT-102", "PLAT-103"])
         self.assertEqual(data[0]["labels"], "auth, p1")
 
+    def test_custom_field_columns(self):
+        session = FakeSession().add("GET", r"/rest/api/3/field$", load("fields.json"))
+        session.add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
+        code, text, _ = run(["--jql", "project = PLAT", "-F", "Story point estimate=points", "-F", "customfield_10030"], session)
+        rows = list(csv.DictReader(io.StringIO(text)))
+        self.assertEqual(code, 0)
+        self.assertEqual([(r["key"], r["points"]) for r in rows], [("PLAT-101", "5"), ("PLAT-102", "3"), ("PLAT-103", "")])
+        self.assertIn("customer_impact", rows[0])
+        fields = session.calls_to("GET", "/search")[0]["params"]["fields"].split(",")
+        self.assertIn("customfield_10016", fields)
+
+    def test_unknown_field_is_a_usage_error(self):
+        session = FakeSession().add("GET", r"/rest/api/3/field$", load("fields.json"))
+        code, _, err = run(["--jql", "project = PLAT", "-F", "Nope"], session)
+        self.assertEqual(code, 2)
+        self.assertIn("Nope", err)
+
     def test_changelog_sidecar(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "issues.csv")
