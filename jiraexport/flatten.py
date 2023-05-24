@@ -30,10 +30,16 @@ def render_value(value):
         return str(int(value))
     if isinstance(value, (int, float, str)):
         return str(value)
+    if isinstance(value, list):
+        return ", ".join(text for text in (render_value(v) for v in value) if text)
     if isinstance(value, dict):
-        for key in ("value", "name"):
+        if value.get("type") == "doc":
+            return to_text(value)
+        for key in ("displayName", "value", "name"):
             if value.get(key):
-                return str(value[key])
+                label = str(value[key])
+                child = value.get("child")  # cascading select: "Hardware / Laptop"
+                return "{} / {}".format(label, render_value(child)) if child else label
     return json.dumps(value, sort_keys=True)
 
 

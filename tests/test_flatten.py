@@ -60,6 +60,17 @@ class FlattenTests(unittest.TestCase):
         self.assertEqual(render({"self": "x", "value": "High", "id": "10"}), "High")
         self.assertEqual(render({"name": "2.15", "id": "5"}), "2.15")
 
+    def test_render_lists_users_cascades_and_rich_text(self):
+        render = flatten.render_value
+        self.assertEqual(render([{"value": "prod"}, {"value": "staging"}]), "prod, staging")
+        self.assertEqual(render([]), "")
+        self.assertEqual(render([{"id": 1, "name": "Sprint 41", "state": "closed", "boardId": 3}, {"id": 2, "name": "Sprint 42", "state": "active"}]),
+                         "Sprint 41, Sprint 42")
+        self.assertEqual(render({"accountId": "x", "displayName": "Carol Nguyen", "active": True}), "Carol Nguyen")
+        self.assertEqual(render({"value": "Hardware", "child": {"value": "Laptop"}}), "Hardware / Laptop")
+        self.assertEqual(render({"type": "doc", "version": 1, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "rich"}]}]}), "rich")
+        self.assertEqual(render({"unexpected": [1, 2]}), '{"unexpected": [1, 2]}')
+
     def test_resolution(self):
         self.assertEqual(self.rows["PLAT-102"]["resolution"], "Done")
 
