@@ -32,6 +32,9 @@ def download_all(client, issue_key, attachments, dest_dir, max_bytes=None):
             continue
         os.makedirs(folder, exist_ok=True)
         target = os.path.join(folder, local_name(att))
+        if os.path.exists(target) and os.path.getsize(target) == att.get("size"):
+            notes[att["id"]] = target  # fetched by an earlier run
+            continue
         try:
             client.download(att["content"], target)
         except JiraError as exc:

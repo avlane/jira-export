@@ -1,4 +1,5 @@
 """Minimal Jira Cloud REST client (basic auth with an API token)."""
+import os
 import time
 
 
@@ -71,8 +72,15 @@ class JiraClient:
         if resp.status_code != 200:
             raise JiraError("GET {} failed with HTTP {}".format(url, resp.status_code), resp.status_code, url)
         written = 0
-        with open(dest, "wb") as handle:
-            for chunk in resp.iter_content(chunk_size):
-                handle.write(chunk)
-                written += len(chunk)
+        partial = dest + ".part"
+        try:
+            with open(partial, "wb") as handle:
+                for chunk in resp.iter_content(chunk_size):
+                    handle.write(chunk)
+                    written += len(chunk)
+            os.replace(partial, dest)
+        except BaseException:
+            if os.path.exists(partial):
+                os.remove(partial)
+            raise
         return written

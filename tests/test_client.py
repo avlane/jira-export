@@ -40,6 +40,21 @@ class DownloadTests(unittest.TestCase):
         self.assertEqual(written, 200000)
         self.assertTrue(session.calls[0]["url"].endswith("/attachment/content/1"))
 
+    def test_interrupted_download_leaves_no_partial_file(self):
+        import os
+        import tempfile
+
+        class Broken(FakeResponse):
+            def iter_content(self, chunk_size=8192):
+                yield b"abc"
+                raise ConnectionError("connection reset")
+
+        session = FakeSession().add("GET", r"/content/1$", Broken(200, "abc"))
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ConnectionError):
+                make(session).download("https://example.atlassian.net/content/1", os.path.join(tmp, "f.bin"))
+            self.assertEqual(os.listdir(tmp), [])
+
     def test_errors_are_reported(self):
         import os
         import tempfile

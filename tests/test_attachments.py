@@ -32,6 +32,26 @@ class AttachmentTests(unittest.TestCase):
         rows = attachments.rows("PLAT-101", attached(), notes)
         self.assertTrue(rows[0]["saved_as"].endswith("30001-login-trace.har"))
 
+    def test_files_from_an_earlier_run_are_not_fetched_again(self):
+        session = FakeSession().add("GET", r"/attachment/content/\d+$", FakeResponse(200, "x" * 10394))
+        with tempfile.TemporaryDirectory() as tmp:
+            os.makedirs(os.path.join(tmp, "PLAT-101"))
+            with open(os.path.join(tmp, "PLAT-101", "30002-spinner.png"), "wb") as handle:
+                handle.write(b"x" * 10394)
+            notes = attachments.download_all(make_client(session), "PLAT-101", attached(), tmp)
+        self.assertEqual([c["url"][-5:] for c in session.calls], ["30001"])
+        self.assertTrue(notes["30002"].endswith("30002-spinner.png"))
+
+    def test_a_file_with_the_wrong_size_is_fetched_again(self):
+        session = FakeSession().add("GET", r"/attachment/content/\d+$", FakeResponse(200, "x" * 10394))
+        with tempfile.TemporaryDirectory() as tmp:
+            os.makedirs(os.path.join(tmp, "PLAT-101"))
+            with open(os.path.join(tmp, "PLAT-101", "30002-spinner.png"), "wb") as handle:
+                handle.write(b"half")
+            attachments.download_all(make_client(session), "PLAT-101", attached()[1:], tmp)
+            with open(os.path.join(tmp, "PLAT-101", "30002-spinner.png"), "rb") as handle:
+                self.assertEqual(len(handle.read()), 10394)
+
     def test_hostile_filenames_stay_inside_the_folder(self):
         evil = [{"id": "1", "filename": "../../etc/cron.d/job", "size": 1, "content": "https://example.atlassian.net/rest/api/3/attachment/content/1"},
                 {"id": "2", "filename": "..\\..\\boot.ini", "size": 1, "content": "https://example.atlassian.net/rest/api/3/attachment/content/2"},
