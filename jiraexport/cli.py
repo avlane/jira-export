@@ -1,6 +1,7 @@
 """Command line entry point: jira-export --jql ... --output issues.csv"""
 import argparse
 import contextlib
+import logging
 import os
 import sys
 
@@ -24,6 +25,7 @@ def build_parser():
     parser.add_argument("--download-attachments", metavar="DIR", help="save attachment files under DIR/<issue key>/ (implies --attachments)")
     parser.add_argument("--incremental", metavar="STATE_FILE",
                         help="only export what changed since the last run, appending to --output (CSV or JSON Lines)")
+    parser.add_argument("-v", "--verbose", action="count", default=0, help="log progress to stderr (-vv shows requests too)")
     parser.add_argument("--max-attachment-mb", type=float, help="skip downloading attachments larger than this")
     return parser
 
@@ -69,8 +71,14 @@ def open_for_output(stack, path, appending, columns_format):
     return handle, header
 
 
+def setup_logging(verbosity):
+    level = logging.WARNING if verbosity == 0 else logging.INFO if verbosity == 1 else logging.DEBUG
+    logging.basicConfig(level=level, format="%(levelname)s %(message)s", stream=sys.stderr)
+
+
 def main(argv=None, client=None, out=None):
     args = build_parser().parse_args(argv)
+    setup_logging(args.verbose)
     extras = build_extras(args)
     nested = args.format in writers.NESTED
     if extras and not nested and not args.output:

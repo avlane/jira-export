@@ -1,8 +1,13 @@
 """Run an export: search, flatten, collect extras, hand rows to the sinks."""
 from collections import namedtuple
 
+import logging
+
 from . import issues
 from .flatten import flatten
+
+log = logging.getLogger("jiraexport")
+PROGRESS_EVERY = 100
 
 # fields: extra search fields; collect(client, issue) -> list of rows
 Extra = namedtuple("Extra", "name fields columns collect expand", defaults=((),))
@@ -30,4 +35,7 @@ def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fie
         main_sink.write(row)
         if observe is not None:
             observe(issue)
+        if main_sink.count % PROGRESS_EVERY == 0:
+            log.info("exported %d issues (last: %s)", main_sink.count, issue["key"])
+    log.info("export finished: %d issues", main_sink.count)
     return main_sink.count
