@@ -27,6 +27,30 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(session.calls[0]["url"], "https://example.atlassian.net/rest/api/3/attachment/content/1")
 
 
+class TransientErrorTests(unittest.TestCase):
+    def test_gets_are_retried_with_backoff(self):
+        session = FakeSession().add("GET", r"/myself$", Seq(FakeResponse(503), FakeResponse(504), {"ok": True}))
+        sleeps = []
+        client = JiraClient("https://example.atlassian.net", session=session, sleep=sleeps.append)
+        self.assertEqual(client.get("myself"), {"ok": True})
+        self.assertEqual(sleeps, [2, 4])
+
+    def test_posts_are_not_retried(self):
+        session = FakeSession().add("POST", r"/search$", FakeResponse(502, "bad gateway"))
+        client = JiraClient("https://example.atlassian.net", session=session, sleep=lambda s: None)
+        with self.assertRaises(JiraError):
+            client.request("POST", "search", body={})
+        self.assertEqual(len(session.calls), 1)
+
+    def test_downloads_are_retried_too(self):
+        import os
+        import tempfile
+        session = FakeSession().add("GET", r"/content/1$", Seq(FakeResponse(502, "bad gateway"), FakeResponse(200, "ok")))
+        client = JiraClient("https://example.atlassian.net", session=session, sleep=lambda s: None)
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(client.download("https://example.atlassian.net/content/1", os.path.join(tmp, "f")), 2)
+
+
 class DownloadTests(unittest.TestCase):
     def test_streams_to_a_file(self):
         import os

@@ -35,3 +35,6 @@ text. Timestamps are written as ISO 8601 with a colon in the offset.
     export JIRA_URL=https://example.atlassian.net
     export JIRA_EMAIL=you@example.com
     export JIRA_API_TOKEN=...      # https://id.atlassian.com/manage-profile/security/api-tokens
+
+Optional: `JIRA_TIMEOUT` (default 60 seconds per request) and `JIRA_MAX_RETRIES` (default 5;
+applies to HTTP 429 and to 502/503/504 on reads).

@@ -23,6 +23,10 @@ def default_session(email, token):
     return session
 
 
+# Gateway errors Atlassian returns during short outages; reads are safe to repeat.
+TRANSIENT = (502, 503, 504)
+
+
 def retry_after(resp, default=5):
     try:
         return max(0, int(resp.headers.get("Retry-After")))
@@ -55,6 +59,12 @@ class JiraClient:
                 attempt += 1
                 delay = retry_after(resp)
                 log.warning("rate limited; waiting %ss (retry %d of %d)", delay, attempt, self.max_retries)
+                self.sleep(delay)
+                continue
+            if resp.status_code in TRANSIENT and method.upper() == "GET" and attempt < self.max_retries:
+                attempt += 1
+                delay = min(2 ** attempt, 30)
+                log.warning("HTTP %s from Jira; retrying in %ss (retry %d of %d)", resp.status_code, delay, attempt, self.max_retries)
                 self.sleep(delay)
                 continue
             return resp

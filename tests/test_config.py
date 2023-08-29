@@ -20,5 +20,16 @@ class ConfigTests(unittest.TestCase):
             config.from_env(dict(GOOD, JIRA_URL="http://example.atlassian.net"))
 
 
+class TuningTests(unittest.TestCase):
+    def test_defaults_and_overrides(self):
+        self.assertEqual(config.tuning({}), {"timeout": 60, "max_retries": 5})
+        self.assertEqual(config.tuning({"JIRA_TIMEOUT": "20", "JIRA_MAX_RETRIES": "0"}), {"timeout": 20, "max_retries": 0})
+
+    def test_rejects_junk(self):
+        for bad in ({"JIRA_TIMEOUT": "soon"}, {"JIRA_MAX_RETRIES": "-1"}):
+            with self.assertRaises(config.ConfigError):
+                config.tuning(bad)
+
+
 if __name__ == "__main__":
     unittest.main()
