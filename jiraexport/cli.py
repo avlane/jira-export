@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 
-from . import attachments, changelog, comments, config, exporter, fieldmap, incremental, worklogs, writers
+from . import attachments, changelog, comments, config, exporter, fieldmap, incremental, manifest, worklogs, writers
 from .client import JiraClient, JiraError
 from .exporter import Extra
 from .flatten import COLUMNS
@@ -25,6 +25,7 @@ def build_parser():
     parser.add_argument("--download-attachments", metavar="DIR", help="save attachment files under DIR/<issue key>/ (implies --attachments)")
     parser.add_argument("--incremental", metavar="STATE_FILE",
                         help="only export what changed since the last run, appending to --output (CSV or JSON Lines)")
+    parser.add_argument("--manifest", action="store_true", help="write <output>.manifest.json describing the export (needs --output)")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="log progress to stderr (-vv shows requests too)")
     parser.add_argument("--max-attachment-mb", type=float, help="skip downloading attachments larger than this")
     return parser
@@ -87,8 +88,12 @@ def main(argv=None, client=None, out=None):
     if args.incremental and (not args.output or args.format == "json"):
         print("error: --incremental needs --output and CSV or JSON Lines (a JSON array cannot be appended to)", file=sys.stderr)
         return 2
+    if args.manifest and not args.output:
+        print("error: --manifest needs --output", file=sys.stderr)
+        return 2
     try:
         client = client or make_client()
+        started = manifest.now()
         custom = fieldmap.resolve(client, args.field)
         columns = COLUMNS + tuple(f.column for f in custom)
         jql, tracker, appending, previous = args.jql, None, False, None
@@ -119,6 +124,10 @@ def main(argv=None, client=None, out=None):
                 main_sink.close()
         if args.incremental:
             incremental.save(args.incremental, incremental.advance(tracker, seen, count))
+        if args.manifest:
+            files = {args.output: count}
+            files.update({sidecar_path(args.output, name): sink.count for name, sink in side_sinks.items()})
+            manifest.write(args.output + ".manifest.json", manifest.build(args.jql, args.format, started, manifest.now(), files))
     except (config.ConfigError, incremental.StateError, fieldmap.FieldError, JiraError) as exc:
         print("error: {}".format(exc), file=sys.stderr)
         return 2

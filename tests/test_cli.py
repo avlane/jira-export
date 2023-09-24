@@ -59,6 +59,21 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("Nope", err)
 
+    def test_manifest(self):
+        import json
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "issues.csv")
+            code, _, _ = run(["--jql", "project = PLAT", "-o", path, "--comments", "--manifest"])
+            with open(path + ".manifest.json", encoding="utf-8") as handle:
+                data = json.load(handle)
+        self.assertEqual(code, 0)
+        self.assertEqual(data["files"], [{"path": "issues.csv", "rows": 3}, {"path": "issues-comments.csv", "rows": 2}])
+        self.assertEqual(data["jql"], "project = PLAT")
+
+    def test_manifest_needs_output(self):
+        code, _, err = run(["--jql", "project = PLAT", "--manifest"])
+        self.assertEqual(code, 2)
+
     def test_changelog_sidecar(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "issues.csv")
