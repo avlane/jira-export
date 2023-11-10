@@ -59,6 +59,20 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("Nope", err)
 
+    def test_gzip_output_and_sidecar_names(self):
+        import gzip
+        self.assertEqual(cli.sidecar_path("out/issues.csv.gz", "comments"), "out/issues-comments.csv.gz")
+        self.assertEqual(cli.sidecar_path("issues", "comments"), "issues-comments")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "issues.csv.gz")
+            code, _, _ = run(["--jql", "project = PLAT", "-o", path, "--comments"])
+            with gzip.open(path, "rt", encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            with gzip.open(os.path.join(tmp, "issues-comments.csv.gz"), "rt", encoding="utf-8", newline="") as handle:
+                comment_rows = list(csv.DictReader(handle))
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(comment_rows), 2)
+
     def test_manifest(self):
         import json
         with tempfile.TemporaryDirectory() as tmp:

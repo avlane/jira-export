@@ -16,7 +16,7 @@ Options:
 | option | meaning |
 | --- | --- |
 | `--jql` | the query that selects issues (required) |
-| `-o`, `--output` | file to write; standard output if omitted |
+| `-o`, `--output` | file to write; standard output if omitted. A name ending in `.gz` is compressed |
 | `--incremental STATE` | export only what changed since the last run and append to `--output` (CSV or JSON Lines) |
 | `-F`, `--field FIELD[=COLUMN]` | add a column for a custom field by id or name (repeatable) |
 | `--manifest` | write `<output>.manifest.json` listing the files and row counts |

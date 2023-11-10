@@ -49,6 +49,15 @@ class JsonSink:
         self.stream.write("\n]\n" if self.count else "[]\n")
 
 
+def open_text(path, mode="w"):
+    """Open a text file for writing or appending; a .gz name is compressed on the fly."""
+    if path.endswith(".gz"):
+        import gzip
+
+        return gzip.open(path, {"w": "wt", "a": "at"}[mode], encoding="utf-8", newline="")
+    return open(path, mode, newline="", encoding="utf-8")
+
+
 NESTED = ("json", "jsonl")  # formats that can hold comments, worklogs and so on inside each issue
 SINKS = {"csv": CsvSink, "json": JsonSink, "jsonl": JsonlSink}
 

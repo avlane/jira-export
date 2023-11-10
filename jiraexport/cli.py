@@ -37,8 +37,12 @@ def make_client():
 
 
 def sidecar_path(output, name):
-    stem, dot, ext = output.rpartition(".")
-    return "{}-{}.{}".format(stem, name, ext) if dot else "{}-{}".format(output, name)
+    """issues.csv -> issues-<name>.csv, and issues.csv.gz -> issues-<name>.csv.gz"""
+    compressed = output.endswith(".gz")
+    base = output[:-3] if compressed else output
+    stem, dot, ext = base.rpartition(".")
+    path = "{}-{}.{}".format(stem, name, ext) if dot else "{}-{}".format(base, name)
+    return path + ".gz" if compressed else path
 
 
 def build_extras(args):
@@ -68,7 +72,7 @@ def build_extras(args):
 def open_for_output(stack, path, appending, columns_format):
     """Open an output file; when appending to a non-empty file the CSV header must not be repeated."""
     header = not (appending and os.path.exists(path) and os.path.getsize(path) > 0)
-    handle = stack.enter_context(open(path, "a" if appending else "w", newline="", encoding="utf-8"))
+    handle = stack.enter_context(writers.open_text(path, "a" if appending else "w"))
     return handle, header
 
 
