@@ -145,7 +145,7 @@ class CliTests(unittest.TestCase):
             self.assertEqual(first.calls[0]["params"]["jql"], "project = PLAT")
             second = FakeSession().add("GET", r"/rest/api/3/search$", since_handler(everything + [newer]))
             code, _, err = run(["--jql", "project = PLAT", "-o", path, "--incremental", state], second)
-            self.assertEqual(second.calls[0]["params"]["jql"], 'project = PLAT AND updated >= "2021-02-12 08:30"')
+            self.assertEqual(second.calls[0]["params"]["jql"], '(project = PLAT) AND updated >= "2021-02-12 08:30"')
             with open(path, newline="", encoding="utf-8") as handle:
                 text = handle.read()
             with open(state, encoding="utf-8") as handle:

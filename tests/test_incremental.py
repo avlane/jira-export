@@ -29,7 +29,19 @@ class StateFileTests(unittest.TestCase):
 
     def test_jql_since(self):
         got = incremental.jql_since("project = PLAT", "2021-02-12T08:30:45.000+00:00")
-        self.assertEqual(got, 'project = PLAT AND updated >= "2021-02-12 08:30"')
+        self.assertEqual(got, '(project = PLAT) AND updated >= "2021-02-12 08:30"')
+
+    def test_order_by_stays_last_and_or_is_grouped(self):
+        since = "2021-02-12T08:30:45.000+00:00"
+        self.assertEqual(incremental.jql_since("project = PLAT OR project = OPS ORDER BY updated DESC, key", since),
+                         '(project = PLAT OR project = OPS) AND updated >= "2021-02-12 08:30" ORDER BY updated DESC, key')
+        self.assertEqual(incremental.jql_since("order by created", since), 'updated >= "2021-02-12 08:30" order by created')
+
+    def test_order_by_inside_a_string_is_not_a_clause(self):
+        where, order = incremental.split_order_by('summary ~ "order by hand" AND reorder_by = 1 ORDER BY key')
+        self.assertEqual(where, 'summary ~ "order by hand" AND reorder_by = 1')
+        self.assertEqual(order, "ORDER BY key")
+        self.assertEqual(incremental.split_order_by("project = A"), ("project = A", ""))
 
     def test_advance_moves_to_the_latest_update(self):
         issues = [{"key": "A-1", "fields": {"updated": "2021-02-03T10:00:00.000+0000"}}, {"key": "A-2", "fields": {"updated": "2021-02-05T11:30:00.000+0000"}}]

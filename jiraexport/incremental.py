@@ -1,6 +1,7 @@
 """Incremental exports: remember how far the previous run got."""
 import json
 import os
+import re
 from datetime import datetime
 
 VERSION = 1
@@ -36,9 +37,35 @@ def parse(stamp):
     return datetime.fromisoformat(stamp)
 
 
+_ORDER_BY = re.compile(r"\border\s+by\b", re.IGNORECASE)
+
+
+def split_order_by(jql):
+    """Split a query into (conditions, order clause), ignoring ORDER BY inside quoted strings."""
+    quote = None
+    for index, char in enumerate(jql):
+        if quote:
+            if char == quote and jql[index - 1] != "\\":
+                quote = None
+        elif char in "\"'":
+            quote = char
+        elif char in "oO":
+            found = _ORDER_BY.match(jql, index)
+            if found and (index == 0 or not (jql[index - 1].isalnum() or jql[index - 1] == "_")):
+                return jql[:index].strip(), jql[index:].strip()
+    return jql.strip(), ""
+
+
 def jql_since(jql, since):
-    """Narrow a query to issues updated at or after `since` (JQL only has minute precision)."""
-    return '{} AND updated >= "{}"'.format(jql, parse(since).strftime("%Y-%m-%d %H:%M"))
+    """Narrow a query to issues updated at or after `since` (JQL only has minute precision).
+
+    The original conditions are parenthesised so an OR cannot swallow the new
+    clause, and any ORDER BY stays at the end where JQL requires it.
+    """
+    where, order = split_order_by(jql)
+    clause = 'updated >= "{}"'.format(parse(since).strftime("%Y-%m-%d %H:%M"))
+    narrowed = "({}) AND {}".format(where, clause) if where else clause
+    return "{} {}".format(narrowed, order) if order else narrowed
 
 
 def fresh(jql):
