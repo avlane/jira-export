@@ -88,6 +88,16 @@ class CliTests(unittest.TestCase):
         code, _, err = run(["--jql", "project = PLAT", "--manifest"])
         self.assertEqual(code, 2)
 
+    def test_links_sidecar(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "issues.csv")
+            code, _, _ = run(["--jql", "project = PLAT", "-o", path, "--links"])
+            with open(os.path.join(tmp, "issues-links.csv"), newline="", encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle))
+        self.assertEqual(code, 0)
+        self.assertEqual([(r["issue"], r["relation"], r["other"]) for r in rows],
+                         [("PLAT-101", "blocks", "PLAT-103"), ("PLAT-103", "is blocked by", "PLAT-101")])
+
     def test_changelog_sidecar(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "issues.csv")

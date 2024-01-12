@@ -567,7 +567,55 @@
           "thumbnail": "https://example.atlassian.net/rest/api/3/attachment/thumbnail/30002"
         }
       ],
-      "issuelinks": [],
+      "issuelinks": [
+        {
+          "id": "50001",
+          "type": {
+            "id": "10000",
+            "name": "Blocks",
+            "inward": "is blocked by",
+            "outward": "blocks",
+            "self": "https://example.atlassian.net/rest/api/3/issueLinkType/10000"
+          },
+          "outwardIssue": {
+            "id": "10103",
+            "key": "PLAT-103",
+            "self": "https://example.atlassian.net/rest/api/3/issue/10103",
+            "fields": {
+              "summary": "Upgrade build image",
+              "status": {
+                "self": "https://example.atlassian.net/rest/api/3/status/1",
+                "description": "",
+                "iconUrl": "https://example.atlassian.net/",
+                "name": "To Do",
+                "id": "10002",
+                "statusCategory": {
+                  "self": "https://example.atlassian.net/rest/api/3/statuscategory/2",
+                  "id": 2,
+                  "key": "new",
+                  "colorName": "blue-gray",
+                  "name": "To Do"
+                }
+              },
+              "priority": {
+                "self": "https://example.atlassian.net/rest/api/3/priority/4",
+                "iconUrl": "https://example.atlassian.net/images/icons/priorities/low.svg",
+                "name": "Low",
+                "id": "4"
+              },
+              "issuetype": {
+                "self": "https://example.atlassian.net/rest/api/3/issuetype/10002",
+                "id": "10002",
+                "description": "A small, distinct piece of work.",
+                "iconUrl": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318",
+                "name": "Task",
+                "subtask": false,
+                "avatarId": 10318
+              }
+            }
+          }
+        }
+      ],
       "customfield_10016": 5
     },
     "changelog": {
@@ -947,7 +995,55 @@
         "worklogs": []
       },
       "attachment": [],
-      "issuelinks": [],
+      "issuelinks": [
+        {
+          "id": "50001",
+          "type": {
+            "id": "10000",
+            "name": "Blocks",
+            "inward": "is blocked by",
+            "outward": "blocks",
+            "self": "https://example.atlassian.net/rest/api/3/issueLinkType/10000"
+          },
+          "inwardIssue": {
+            "id": "10101",
+            "key": "PLAT-101",
+            "self": "https://example.atlassian.net/rest/api/3/issue/10101",
+            "fields": {
+              "summary": "Login page times out",
+              "status": {
+                "self": "https://example.atlassian.net/rest/api/3/status/1",
+                "description": "",
+                "iconUrl": "https://example.atlassian.net/",
+                "name": "In Progress",
+                "id": "10004",
+                "statusCategory": {
+                  "self": "https://example.atlassian.net/rest/api/3/statuscategory/4",
+                  "id": 4,
+                  "key": "indeterminate",
+                  "colorName": "yellow",
+                  "name": "In Progress"
+                }
+              },
+              "priority": {
+                "self": "https://example.atlassian.net/rest/api/3/priority/2",
+                "iconUrl": "https://example.atlassian.net/images/icons/priorities/high.svg",
+                "name": "High",
+                "id": "2"
+              },
+              "issuetype": {
+                "self": "https://example.atlassian.net/rest/api/3/issuetype/10004",
+                "id": "10004",
+                "description": "A problem which impairs or prevents the functions of the product.",
+                "iconUrl": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10303",
+                "name": "Bug",
+                "subtask": false,
+                "avatarId": 10303
+              }
+            }
+          }
+        }
+      ],
       "customfield_10016": null
     }
   }
