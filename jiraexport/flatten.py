@@ -43,9 +43,15 @@ def render_value(value):
     return json.dumps(value, sort_keys=True)
 
 
-def flatten(issue, custom=()):
+def columns(custom=(), html=False):
+    return COLUMNS + tuple(f.column for f in custom) + (("description_html",) if html else ())
+
+
+def flatten(issue, custom=(), html=False):
     f = issue["fields"]
     row = _core(f, issue["key"])
+    if html:  # needs expand=renderedFields
+        row["description_html"] = (issue.get("renderedFields") or {}).get("description") or ""
     for field in custom:
         row[field.column] = render_value(f.get(field.id))
     return row

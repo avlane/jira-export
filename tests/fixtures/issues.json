@@ -714,6 +714,9 @@
           ]
         }
       ]
+    },
+    "renderedFields": {
+      "description": "<h2>Summary</h2>\n<p>Users on the <strong>login page</strong> see a spinner for 30 seconds and then a timeout.</p>"
     }
   },
   {
@@ -898,6 +901,9 @@
           ]
         }
       ]
+    },
+    "renderedFields": {
+      "description": "<p>As an auditor I can download the audit log as CSV.</p>"
     }
   },
   {

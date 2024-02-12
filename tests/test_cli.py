@@ -88,6 +88,14 @@ class CliTests(unittest.TestCase):
         code, _, err = run(["--jql", "project = PLAT", "--manifest"])
         self.assertEqual(code, 2)
 
+    def test_html_column(self):
+        session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
+        code, text, _ = run(["--jql", "project = PLAT", "--html"], session)
+        rows = list(csv.DictReader(io.StringIO(text)))
+        self.assertTrue(rows[0]["description_html"].startswith("<h2>Summary</h2>"))
+        self.assertEqual(rows[2]["description_html"], "")
+        self.assertEqual(session.calls[0]["params"]["expand"], "renderedFields")
+
     def test_links_sidecar(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "issues.csv")

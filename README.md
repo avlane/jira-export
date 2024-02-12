@@ -21,6 +21,7 @@ Options:
 | `-F`, `--field FIELD[=COLUMN]` | add a column for a custom field by id or name (repeatable) |
 | `--manifest` | write `<output>.manifest.json` listing the files and row counts |
 | `-f`, `--format` | `csv` (default), `json` (one array) or `jsonl` (one issue per line) |
+| `--html` | add a `description_html` column with Jira's rendered HTML |
 | `--comments` | include every comment: `<output>-comments.csv` for CSV, nested in each issue for JSON |
 | `--worklogs` | include every worklog, the same way |
 | `--changelog` | include the change history (one row per changed field), the same way |

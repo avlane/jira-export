@@ -8,7 +8,7 @@ import sys
 from . import attachments, changelog, comments, config, exporter, fieldmap, incremental, links, manifest, worklogs, writers
 from .client import JiraClient, JiraError
 from .exporter import Extra
-from .flatten import COLUMNS
+from .flatten import columns as flat_columns
 
 
 def build_parser():
@@ -18,6 +18,7 @@ def build_parser():
     parser.add_argument("--format", "-f", choices=sorted(writers.SINKS), default="csv", help="output format (default csv)")
     parser.add_argument("--field", "-F", action="append", default=[], metavar="FIELD[=COLUMN]",
                         help="add a column for a field, by id or name (repeatable), e.g. 'Story point estimate=points'")
+    parser.add_argument("--html", action="store_true", help="add a description_html column with Jira's rendered HTML")
     parser.add_argument("--comments", action="store_true", help="include every comment")
     parser.add_argument("--worklogs", action="store_true", help="include every worklog")
     parser.add_argument("--changelog", action="store_true", help="include the change history, one row per changed field")
@@ -103,7 +104,7 @@ def main(argv=None, client=None, out=None):
         client = client or make_client()
         started = manifest.now()
         custom = fieldmap.resolve(client, args.field)
-        columns = COLUMNS + tuple(f.column for f in custom)
+        columns = flat_columns(custom, args.html)
         jql, tracker, appending, previous = args.jql, None, False, None
         if args.incremental:
             previous = incremental.load(args.incremental)
@@ -127,7 +128,7 @@ def main(argv=None, client=None, out=None):
             seen = []
             try:
                 skip = (lambda issue: incremental.already_exported(tracker, issue)) if appending else None
-                count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip, custom=custom)
+                count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip, custom=custom, html=args.html)
             finally:
                 main_sink.close()
         if args.incremental:
