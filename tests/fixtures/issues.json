@@ -616,7 +616,40 @@
           }
         }
       ],
-      "customfield_10016": 5
+      "customfield_10016": 5,
+      "subtasks": [
+        {
+          "id": "10105",
+          "key": "PLAT-105",
+          "self": "https://example.atlassian.net/rest/api/3/issue/10105",
+          "fields": {
+            "summary": "Profile the session store",
+            "status": {
+              "self": "https://example.atlassian.net/rest/api/3/status/1",
+              "description": "",
+              "iconUrl": "https://example.atlassian.net/",
+              "name": "To Do",
+              "id": "10002",
+              "statusCategory": {
+                "self": "https://example.atlassian.net/rest/api/3/statuscategory/2",
+                "id": 2,
+                "key": "new",
+                "colorName": "blue-gray",
+                "name": "To Do"
+              }
+            },
+            "issuetype": {
+              "self": "https://example.atlassian.net/rest/api/3/issuetype/10003",
+              "id": "10003",
+              "description": "A small piece of work that's part of a larger task.",
+              "iconUrl": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10316",
+              "name": "Sub-task",
+              "subtask": true,
+              "avatarId": 10316
+            }
+          }
+        }
+      ]
     },
     "changelog": {
       "startAt": 0,
@@ -1050,7 +1083,38 @@
           }
         }
       ],
-      "customfield_10016": null
+      "customfield_10016": null,
+      "parent": {
+        "id": "10101",
+        "key": "PLAT-101",
+        "self": "https://example.atlassian.net/rest/api/3/issue/10101",
+        "fields": {
+          "summary": "Login page times out",
+          "status": {
+            "self": "https://example.atlassian.net/rest/api/3/status/1",
+            "description": "",
+            "iconUrl": "https://example.atlassian.net/",
+            "name": "In Progress",
+            "id": "10004",
+            "statusCategory": {
+              "self": "https://example.atlassian.net/rest/api/3/statuscategory/4",
+              "id": 4,
+              "key": "indeterminate",
+              "colorName": "yellow",
+              "name": "In Progress"
+            }
+          },
+          "issuetype": {
+            "self": "https://example.atlassian.net/rest/api/3/issuetype/10004",
+            "id": "10004",
+            "description": "A problem which impairs or prevents the functions of the product.",
+            "iconUrl": "https://example.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10303",
+            "name": "Bug",
+            "subtask": false,
+            "avatarId": 10303
+          }
+        }
+      }
     }
   }
 ]

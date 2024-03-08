@@ -44,6 +44,12 @@ class FlattenTests(unittest.TestCase):
         self.assertEqual(flatten.normalise_timestamp("2021-02-03T10:15:22.123+00:00"), "2021-02-03T10:15:22.123+00:00")
         self.assertEqual(flatten.normalise_timestamp(None), "")
 
+    def test_parent_and_subtasks(self):
+        self.assertEqual(self.rows["PLAT-103"]["parent"], "PLAT-101")
+        self.assertEqual(self.rows["PLAT-101"]["subtasks"], "PLAT-105")
+        self.assertEqual(self.rows["PLAT-102"]["parent"], "")
+        self.assertEqual(self.rows["PLAT-102"]["subtasks"], "")
+
     def test_custom_columns(self):
         from jiraexport.fieldmap import Field
         issue = load("issues.json")[0]

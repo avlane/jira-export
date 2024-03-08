@@ -1,7 +1,7 @@
 """Fetching issues by JQL."""
 
 DEFAULT_FIELDS = ("summary", "issuetype", "status", "priority", "assignee", "reporter", "created", "updated",
-                  "resolution", "labels", "components", "fixVersions", "project", "description")
+                  "resolution", "labels", "components", "fixVersions", "project", "description", "parent", "subtasks")
 
 # GET puts the JQL in the URL; past roughly this length proxies and Jira start answering 414 or 400.
 MAX_GET_JQL = 1500
