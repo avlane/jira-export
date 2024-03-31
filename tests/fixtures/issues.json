@@ -649,7 +649,10 @@
             }
           }
         }
-      ]
+      ],
+      "timeoriginalestimate": 28800,
+      "timeestimate": 14400,
+      "timespent": 12600
     },
     "changelog": {
       "startAt": 0,
@@ -899,7 +902,10 @@
       },
       "attachment": [],
       "issuelinks": [],
-      "customfield_10016": 3
+      "customfield_10016": 3,
+      "timeoriginalestimate": 14400,
+      "timeestimate": 0,
+      "timespent": 14000
     },
     "changelog": {
       "startAt": 0,
@@ -1114,7 +1120,10 @@
             "avatarId": 10303
           }
         }
-      }
+      },
+      "timeoriginalestimate": null,
+      "timeestimate": null,
+      "timespent": null
     }
   }
 ]

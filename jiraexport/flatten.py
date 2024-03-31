@@ -5,7 +5,7 @@ import re
 from .adf import to_text
 
 COLUMNS = ("key", "summary", "issuetype", "status", "priority", "assignee", "reporter", "created", "updated",
-           "resolution", "labels", "components", "fixVersions", "project", "description", "parent", "subtasks")
+           "resolution", "labels", "components", "fixVersions", "project", "description", "parent", "subtasks", "estimate_seconds", "remaining_seconds", "spent_seconds")
 
 
 def _name(obj):
@@ -76,6 +76,9 @@ def _core(f, key):
         "description": to_text(f.get("description")),
         "parent": (f.get("parent") or {}).get("key", ""),
         "subtasks": ", ".join(s.get("key", "") for s in f.get("subtasks") or []),
+        "estimate_seconds": render_value(f.get("timeoriginalestimate")),
+        "remaining_seconds": render_value(f.get("timeestimate")),
+        "spent_seconds": render_value(f.get("timespent")),
     }
 
 

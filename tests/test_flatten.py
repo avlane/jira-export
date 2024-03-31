@@ -44,6 +44,12 @@ class FlattenTests(unittest.TestCase):
         self.assertEqual(flatten.normalise_timestamp("2021-02-03T10:15:22.123+00:00"), "2021-02-03T10:15:22.123+00:00")
         self.assertEqual(flatten.normalise_timestamp(None), "")
 
+    def test_time_tracking_in_seconds(self):
+        row = self.rows["PLAT-101"]
+        self.assertEqual((row["estimate_seconds"], row["remaining_seconds"], row["spent_seconds"]), ("28800", "14400", "12600"))
+        self.assertEqual(self.rows["PLAT-102"]["remaining_seconds"], "0")
+        self.assertEqual(self.rows["PLAT-103"]["estimate_seconds"], "")
+
     def test_parent_and_subtasks(self):
         self.assertEqual(self.rows["PLAT-103"]["parent"], "PLAT-101")
         self.assertEqual(self.rows["PLAT-101"]["subtasks"], "PLAT-105")
