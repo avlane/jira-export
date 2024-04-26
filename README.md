@@ -20,6 +20,8 @@ Options:
 | `--incremental STATE` | export only what changed since the last run and append to `--output` (CSV or JSON Lines) |
 | `-F`, `--field FIELD[=COLUMN]` | add a column for a custom field by id or name (repeatable) |
 | `--manifest` | write `<output>.manifest.json` listing the files and row counts |
+| `--limit N` | stop after N issues |
+| `--columns A,B,C` | only these columns of the main file, in this order |
 | `-f`, `--format` | `csv` (default), `json` (one array) or `jsonl` (one issue per line) |
 | `--html` | add a `description_html` column with Jira's rendered HTML |
 | `--comments` | include every comment: `<output>-comments.csv` for CSV, nested in each issue for JSON |

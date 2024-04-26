@@ -18,6 +18,8 @@ def build_parser():
     parser.add_argument("--format", "-f", choices=sorted(writers.SINKS), default="csv", help="output format (default csv)")
     parser.add_argument("--field", "-F", action="append", default=[], metavar="FIELD[=COLUMN]",
                         help="add a column for a field, by id or name (repeatable), e.g. 'Story point estimate=points'")
+    parser.add_argument("--limit", type=int, metavar="N", help="stop after N issues")
+    parser.add_argument("--columns", metavar="A,B,C", help="only these columns of the main file, in this order")
     parser.add_argument("--html", action="store_true", help="add a description_html column with Jira's rendered HTML")
     parser.add_argument("--comments", action="store_true", help="include every comment")
     parser.add_argument("--worklogs", action="store_true", help="include every worklog")
@@ -105,6 +107,13 @@ def main(argv=None, client=None, out=None):
         started = manifest.now()
         custom = fieldmap.resolve(client, args.field)
         columns = flat_columns(custom, args.html)
+        only = None
+        if args.columns:
+            only = tuple(c.strip() for c in args.columns.split(",") if c.strip())
+            unknown = [c for c in only if c not in columns]
+            if unknown:
+                raise fieldmap.FieldError("unknown column(s): {} (choose from {})".format(", ".join(unknown), ", ".join(columns)))
+            columns = only
         jql, tracker, appending, previous = args.jql, None, False, None
         if args.incremental:
             previous = incremental.load(args.incremental)
@@ -128,7 +137,7 @@ def main(argv=None, client=None, out=None):
             seen = []
             try:
                 skip = (lambda issue: incremental.already_exported(tracker, issue)) if appending else None
-                count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip, custom=custom, html=args.html)
+                count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip, custom=custom, html=args.html, limit=args.limit, only=only)
             finally:
                 main_sink.close()
         if args.incremental:

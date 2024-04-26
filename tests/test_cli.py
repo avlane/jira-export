@@ -88,6 +88,26 @@ class CliTests(unittest.TestCase):
         code, _, err = run(["--jql", "project = PLAT", "--manifest"])
         self.assertEqual(code, 2)
 
+    def test_limit(self):
+        code, text, err = run(["--jql", "project = PLAT", "--limit", "2"])
+        self.assertEqual([r["key"] for r in csv.DictReader(io.StringIO(text))], ["PLAT-101", "PLAT-102"])
+        self.assertIn("exported 2 issues", err)
+
+    def test_column_selection_and_order(self):
+        code, text, _ = run(["--jql", "project = PLAT", "--columns", "status,key"])
+        self.assertEqual(text.splitlines()[:2], ["status,key", "In Progress,PLAT-101"])
+
+    def test_unknown_column(self):
+        code, _, err = run(["--jql", "project = PLAT", "--columns", "key,colour"])
+        self.assertEqual(code, 2)
+        self.assertIn("colour", err)
+
+    def test_columns_apply_to_json_too(self):
+        import json
+        code, text, _ = run(["--jql", "project = PLAT", "--format", "jsonl", "--columns", "key,status", "--comments"])
+        first = json.loads(text.splitlines()[0])
+        self.assertEqual(list(first), ["key", "status", "comments"])
+
     def test_html_column(self):
         session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
         code, text, _ = run(["--jql", "project = PLAT", "--html"], session)
