@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 
-from . import attachments, changelog, comments, config, exporter, fieldmap, incremental, links, manifest, worklogs, writers
+from . import attachments, changelog, comments, config, exporter, fieldmap, incremental, jqlbuild, links, manifest, worklogs, writers
 from .client import JiraClient, JiraError
 from .exporter import Extra
 from .flatten import columns as flat_columns
@@ -13,7 +13,10 @@ from .flatten import columns as flat_columns
 
 def build_parser():
     parser = argparse.ArgumentParser(prog="jira-export", description="Export Jira Cloud issues selected by JQL.")
-    parser.add_argument("--jql", required=True, help="JQL query selecting the issues")
+    parser.add_argument("--jql", help="JQL query selecting the issues")
+    parser.add_argument("--project", "-p", action="append", default=[], metavar="KEY", help="only this project (repeatable)")
+    parser.add_argument("--status", action="append", default=[], metavar="NAME", help="only this status (repeatable)")
+    parser.add_argument("--updated-since", metavar="DATE", help="only issues updated on or after 2024-03-01 [HH:MM]")
     parser.add_argument("--output", "-o", help="file to write (default: standard output)")
     parser.add_argument("--format", "-f", choices=sorted(writers.SINKS), default="csv", help="output format (default csv)")
     parser.add_argument("--field", "-F", action="append", default=[], metavar="FIELD[=COLUMN]",
@@ -91,6 +94,11 @@ def setup_logging(verbosity):
 def main(argv=None, client=None, out=None):
     args = build_parser().parse_args(argv)
     setup_logging(args.verbose)
+    try:
+        args.jql = jqlbuild.build(args.jql, args.project, args.status, args.updated_since)
+    except jqlbuild.JqlError as exc:
+        print("error: {}".format(exc), file=sys.stderr)
+        return 2
     extras = build_extras(args)
     nested = args.format in writers.NESTED
     if extras and not nested and not args.output:

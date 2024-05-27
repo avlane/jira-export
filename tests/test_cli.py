@@ -225,9 +225,20 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("HTTP 400", err)
 
-    def test_jql_is_required(self):
-        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            cli.build_parser().parse_args([])
+    def test_a_query_or_a_filter_is_required(self):
+        code, _, err = run([])
+        self.assertEqual(code, 2)
+        self.assertIn("--jql", err)
+
+    def test_filters_build_the_query(self):
+        session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
+        code, _, _ = run(["-p", "PLAT", "--status", "To Do", "--updated-since", "2024-03-01"], session)
+        self.assertEqual(session.calls[0]["params"]["jql"], 'project in ("PLAT") AND status in ("To Do") AND updated >= "2024-03-01"')
+
+    def test_bad_date_is_reported(self):
+        code, _, err = run(["-p", "PLAT", "--updated-since", "yesterday"])
+        self.assertEqual(code, 2)
+        self.assertIn("--updated-since", err)
 
 
 if __name__ == "__main__":

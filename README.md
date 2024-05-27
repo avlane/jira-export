@@ -15,7 +15,10 @@ Options:
 
 | option | meaning |
 | --- | --- |
-| `--jql` | the query that selects issues (required) |
+| `--jql` | the query that selects issues |
+| `-p`, `--project KEY` | only this project (repeatable); combined with the other filters using AND |
+| `--status NAME` | only this status (repeatable) |
+| `--updated-since DATE` | only issues updated on or after `2024-03-01` or `2024-03-01 09:30` |
 | `-o`, `--output` | file to write; standard output if omitted. A name ending in `.gz` is compressed |
 | `--incremental STATE` | export only what changed since the last run and append to `--output` (CSV or JSON Lines) |
 | `-F`, `--field FIELD[=COLUMN]` | add a column for a custom field by id or name (repeatable) |
