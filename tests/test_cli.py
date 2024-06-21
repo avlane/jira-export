@@ -88,6 +88,21 @@ class CliTests(unittest.TestCase):
         code, _, err = run(["--jql", "project = PLAT", "--manifest"])
         self.assertEqual(code, 2)
 
+    def test_excel_adds_a_bom_to_every_csv(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "issues.csv")
+            run(["--jql", "project = PLAT", "-o", path, "--comments", "--excel"])
+            for name in ("issues.csv", "issues-comments.csv"):
+                with open(os.path.join(tmp, name), "rb") as handle:
+                    self.assertEqual(handle.read(3), b"\xef\xbb\xbf")
+            run(["--jql", "project = PLAT", "-o", path])
+            with open(path, "rb") as handle:
+                self.assertEqual(handle.read(3), b"key")
+
+    def test_excel_on_stdout(self):
+        code, text, _ = run(["--jql", "project = PLAT", "--excel"])
+        self.assertTrue(text.startswith("\ufeffkey,"))
+
     def test_limit(self):
         code, text, err = run(["--jql", "project = PLAT", "--limit", "2"])
         self.assertEqual([r["key"] for r in csv.DictReader(io.StringIO(text))], ["PLAT-101", "PLAT-102"])

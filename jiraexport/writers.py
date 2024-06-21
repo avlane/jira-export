@@ -49,13 +49,18 @@ class JsonSink:
         self.stream.write("\n]\n" if self.count else "[]\n")
 
 
-def open_text(path, mode="w"):
-    """Open a text file for writing or appending; a .gz name is compressed on the fly."""
+def open_text(path, mode="w", bom=False):
+    """Open a text file for writing or appending; a .gz name is compressed on the fly.
+
+    bom=True starts a new file with a UTF-8 byte order mark, which makes Excel
+    read it as UTF-8 instead of the local code page.
+    """
+    encoding = "utf-8-sig" if bom and mode == "w" else "utf-8"
     if path.endswith(".gz"):
         import gzip
 
-        return gzip.open(path, {"w": "wt", "a": "at"}[mode], encoding="utf-8", newline="")
-    return open(path, mode, newline="", encoding="utf-8")
+        return gzip.open(path, {"w": "wt", "a": "at"}[mode], encoding=encoding, newline="")
+    return open(path, mode, newline="", encoding=encoding)
 
 
 NESTED = ("json", "jsonl")  # formats that can hold comments, worklogs and so on inside each issue

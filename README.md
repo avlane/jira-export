@@ -23,6 +23,7 @@ Options:
 | `--incremental STATE` | export only what changed since the last run and append to `--output` (CSV or JSON Lines) |
 | `-F`, `--field FIELD[=COLUMN]` | add a column for a custom field by id or name (repeatable) |
 | `--manifest` | write `<output>.manifest.json` listing the files and row counts |
+| `--excel` | start CSV files with a UTF-8 byte order mark so Excel shows accents correctly |
 | `--limit N` | stop after N issues |
 | `--columns A,B,C` | only these columns of the main file, in this order |
 | `-f`, `--format` | `csv` (default), `json` (one array) or `jsonl` (one issue per line) |

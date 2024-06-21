@@ -21,6 +21,7 @@ def build_parser():
     parser.add_argument("--format", "-f", choices=sorted(writers.SINKS), default="csv", help="output format (default csv)")
     parser.add_argument("--field", "-F", action="append", default=[], metavar="FIELD[=COLUMN]",
                         help="add a column for a field, by id or name (repeatable), e.g. 'Story point estimate=points'")
+    parser.add_argument("--excel", action="store_true", help="start CSV files with a UTF-8 byte order mark so Excel reads accents correctly")
     parser.add_argument("--limit", type=int, metavar="N", help="stop after N issues")
     parser.add_argument("--columns", metavar="A,B,C", help="only these columns of the main file, in this order")
     parser.add_argument("--html", action="store_true", help="add a description_html column with Jira's rendered HTML")
@@ -79,10 +80,10 @@ def build_extras(args):
     return extras
 
 
-def open_for_output(stack, path, appending, columns_format):
+def open_for_output(stack, path, appending, bom=False):
     """Open an output file; when appending to a non-empty file the CSV header must not be repeated."""
     header = not (appending and os.path.exists(path) and os.path.getsize(path) > 0)
-    handle = stack.enter_context(writers.open_text(path, "a" if appending else "w"))
+    handle = stack.enter_context(writers.open_text(path, "a" if appending else "w", bom))
     return handle, header
 
 
@@ -133,14 +134,16 @@ def main(argv=None, client=None, out=None):
             tracker = previous or incremental.fresh(args.jql)
         with contextlib.ExitStack() as stack:
             if args.output:
-                stream, header = open_for_output(stack, args.output, appending, args.format)
+                stream, header = open_for_output(stack, args.output, appending, args.excel)
             else:
                 stream, header = (out if out is not None else sys.stdout), True
+                if args.excel:
+                    stream.write("\ufeff")
             main_sink = writers.open_sink(args.format, stream, columns, header)
             side_sinks = {}
             if not nested:
                 for extra in extras:
-                    handle, side_header = open_for_output(stack, sidecar_path(args.output, extra.name), appending, "csv")
+                    handle, side_header = open_for_output(stack, sidecar_path(args.output, extra.name), appending, args.excel)
                     side_sinks[extra.name] = writers.open_sink("csv", handle, extra.columns, side_header)
             seen = []
             try:
