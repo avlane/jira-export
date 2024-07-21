@@ -22,6 +22,7 @@ def build_parser():
     parser.add_argument("--field", "-F", action="append", default=[], metavar="FIELD[=COLUMN]",
                         help="add a column for a field, by id or name (repeatable), e.g. 'Story point estimate=points'")
     parser.add_argument("--excel", action="store_true", help="start CSV files with a UTF-8 byte order mark so Excel reads accents correctly")
+    parser.add_argument("--raw-csv", action="store_true", help="do not defuse cells that start with = + @ or -")
     parser.add_argument("--limit", type=int, metavar="N", help="stop after N issues")
     parser.add_argument("--columns", metavar="A,B,C", help="only these columns of the main file, in this order")
     parser.add_argument("--html", action="store_true", help="add a description_html column with Jira's rendered HTML")
@@ -139,12 +140,12 @@ def main(argv=None, client=None, out=None):
                 stream, header = (out if out is not None else sys.stdout), True
                 if args.excel:
                     stream.write("\ufeff")
-            main_sink = writers.open_sink(args.format, stream, columns, header)
+            main_sink = writers.open_sink(args.format, stream, columns, header, not args.raw_csv)
             side_sinks = {}
             if not nested:
                 for extra in extras:
                     handle, side_header = open_for_output(stack, sidecar_path(args.output, extra.name), appending, args.excel)
-                    side_sinks[extra.name] = writers.open_sink("csv", handle, extra.columns, side_header)
+                    side_sinks[extra.name] = writers.open_sink("csv", handle, extra.columns, side_header, not args.raw_csv)
             seen = []
             try:
                 skip = (lambda issue: incremental.already_exported(tracker, issue)) if appending else None

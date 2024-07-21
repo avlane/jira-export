@@ -103,6 +103,17 @@ class CliTests(unittest.TestCase):
         code, text, _ = run(["--jql", "project = PLAT", "--excel"])
         self.assertTrue(text.startswith("\ufeffkey,"))
 
+    def test_summaries_that_look_like_formulas_are_quoted(self):
+        import json
+        issues = json.loads(json.dumps(load("issues.json")))
+        issues[0]["fields"]["summary"] = "=cmd|' /C calc'!A0"
+        session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(issues))
+        code, text, _ = run(["--jql", "project = PLAT"], session)
+        self.assertEqual(list(csv.DictReader(io.StringIO(text)))[0]["summary"], "'=cmd|' /C calc'!A0")
+        session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(issues))
+        code, text, _ = run(["--jql", "project = PLAT", "--raw-csv"], session)
+        self.assertEqual(list(csv.DictReader(io.StringIO(text)))[0]["summary"], "=cmd|' /C calc'!A0")
+
     def test_limit(self):
         code, text, err = run(["--jql", "project = PLAT", "--limit", "2"])
         self.assertEqual([r["key"] for r in csv.DictReader(io.StringIO(text))], ["PLAT-101", "PLAT-102"])

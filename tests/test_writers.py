@@ -41,6 +41,22 @@ class SinkTests(unittest.TestCase):
         text, _ = write("jsonl", [{"key": "caf\u00e9"}])
         self.assertIn("caf\u00e9", text)
 
+    def test_formulas_are_defused_in_csv(self):
+        rows = [{"key": '=HYPERLINK("http://evil.example","x")', "n": "+1+1"}, {"key": "@SUM(A1)", "n": "-cmd|calc"},
+                {"key": "- a list item", "n": "-12.5"}, {"key": "plain", "n": ""}]
+        text, _ = write("csv", rows)
+        got = list(csv.reader(io.StringIO(text)))[1:]
+        self.assertEqual(got, [["'=HYPERLINK(\"http://evil.example\",\"x\")", "'+1+1"], ["'@SUM(A1)", "'-cmd|calc"],
+                               ["- a list item", "-12.5"], ["plain", ""]])
+
+    def test_escaping_can_be_turned_off_and_does_not_touch_json(self):
+        stream = io.StringIO()
+        sink = writers.open_sink("csv", stream, ("key",), True, False)
+        sink.write({"key": "=1+1"})
+        self.assertEqual(stream.getvalue().splitlines()[1], "=1+1")
+        text, _ = write("jsonl", [{"key": "=1+1", "n": "x"}])
+        self.assertEqual(json.loads(text)["key"], "=1+1")
+
     def test_unknown_format(self):
         with self.assertRaises(ValueError):
             writers.open_sink("xml", io.StringIO(), ())
