@@ -35,6 +35,7 @@ Options:
 | `--links` | include issue links, the same way |
 | `--attachments` | include attachment metadata, the same way |
 | `--download-attachments DIR` | save the files under `DIR/<issue key>/` as `<id>-<filename>` |
+| `--download-workers N` | fetch an issue's attachments with N threads |
 | `--max-attachment-mb N` | skip downloading anything larger |
 
 Rich text (descriptions, comments) is converted from Atlassian Document Format to plain

@@ -70,6 +70,19 @@ class AttachmentTests(unittest.TestCase):
         self.assertEqual(attachments.safe_filename("tab\there.txt"), "tab_here.txt")
         self.assertEqual(attachments.safe_filename(""), "attachment")
 
+    def test_concurrent_downloads_give_the_same_result(self):
+        session = FakeSession().add("GET", r"/attachment/content/\d+$", lambda call: FakeResponse(200, "body " + call["url"][-5:]))
+        with tempfile.TemporaryDirectory() as tmp:
+            notes = attachments.download_all(make_client(session), "PLAT-101", attached(), tmp, workers=4)
+            self.assertEqual(sorted(os.listdir(os.path.join(tmp, "PLAT-101"))), ["30001-login-trace.har", "30002-spinner.png"])
+        self.assertEqual(list(notes), ["30001", "30002"])
+        self.assertEqual(len(session.calls), 2)
+
+    def test_no_attachments_creates_no_folder(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(attachments.download_all(make_client(FakeSession()), "PLAT-102", [], tmp, workers=3), {})
+            self.assertEqual(os.listdir(tmp), [])
+
     def test_size_limit(self):
         session = FakeSession().add("GET", r"/attachment/content/\d+$", FakeResponse(200, "x"))
         with tempfile.TemporaryDirectory() as tmp:

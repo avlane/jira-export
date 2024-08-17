@@ -36,6 +36,7 @@ def build_parser():
                         help="only export what changed since the last run, appending to --output (CSV or JSON Lines)")
     parser.add_argument("--manifest", action="store_true", help="write <output>.manifest.json describing the export (needs --output)")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="log progress to stderr (-vv shows requests too)")
+    parser.add_argument("--download-workers", type=int, default=1, metavar="N", help="fetch an issue's attachments with N threads (default 1)")
     parser.add_argument("--max-attachment-mb", type=float, help="skip downloading attachments larger than this")
     return parser
 
@@ -75,7 +76,8 @@ def build_extras(args):
             files = issue["fields"].get("attachment") or []
             notes = {}
             if args.download_attachments:
-                notes = attachments.download_all(client, issue["key"], files, args.download_attachments, max_bytes)
+                notes = attachments.download_all(client, issue["key"], files, args.download_attachments, max_bytes,
+                                                 workers=args.download_workers)
             return attachments.rows(issue["key"], files, notes)
         extras.append(Extra("attachments", ("attachment",), attachments.COLUMNS, collect))
     return extras
