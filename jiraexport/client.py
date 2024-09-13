@@ -82,8 +82,11 @@ class JiraClient:
     def get(self, path, params=None):
         return self.request("GET", path, params=params)
 
-    def download(self, path, dest, chunk_size=65536):
-        """Stream a file (an attachment's content URL) to dest and return the number of bytes written."""
+    def download(self, path, dest, chunk_size=65536, on_chunk=None):
+        """Stream a file (an attachment's content URL) to dest and return the number of bytes written.
+
+        on_chunk, if given, sees every chunk as it is written (for checksums).
+        """
         url = self.url(path)
         resp = self._send("GET", url, stream=True)
         if resp.status_code != 200:
@@ -95,6 +98,8 @@ class JiraClient:
                 for chunk in resp.iter_content(chunk_size):
                     handle.write(chunk)
                     written += len(chunk)
+                    if on_chunk is not None:
+                        on_chunk(chunk)
             os.replace(partial, dest)
         except BaseException:
             if os.path.exists(partial):

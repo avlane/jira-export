@@ -1,10 +1,23 @@
 """Attachment metadata and optional downloads."""
+import hashlib
 import os
+from collections import namedtuple
 
 from .client import JiraError
 from .flatten import normalise_timestamp
 
-COLUMNS = ("issue", "id", "filename", "size", "mimeType", "created", "author", "saved_as")
+COLUMNS = ("issue", "id", "filename", "size", "mimeType", "created", "author", "saved_as", "sha256")
+
+# saved_as is the path, or 'skipped: ...' / 'failed: ...'; sha256 is only set when a file is on disk
+Note = namedtuple("Note", "saved_as sha256", defaults=("",))
+
+
+def _hash_file(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def safe_filename(name):
@@ -20,17 +33,18 @@ def local_name(attachment):
 
 
 def _fetch_one(client, att, folder, max_bytes):
-    """Note for one attachment: its saved path, or 'skipped: ...' / 'failed: ...'."""
+    """Note for one attachment: where it was saved and its checksum, or why it was not."""
     if max_bytes is not None and att.get("size", 0) > max_bytes:
-        return "skipped: larger than {} bytes".format(max_bytes)
+        return Note("skipped: larger than {} bytes".format(max_bytes))
     target = os.path.join(folder, local_name(att))
     if os.path.exists(target) and os.path.getsize(target) == att.get("size"):
-        return target  # fetched by an earlier run
+        return Note(target, _hash_file(target))  # fetched by an earlier run
+    digest = hashlib.sha256()
     try:
-        client.download(att["content"], target)
+        client.download(att["content"], target, on_chunk=digest.update)
     except JiraError as exc:
-        return "failed: HTTP {}".format(exc.status)
-    return target
+        return Note("failed: HTTP {}".format(exc.status))
+    return Note(target, digest.hexdigest())
 
 
 def download_all(client, issue_key, attachments, dest_dir, max_bytes=None, workers=1):
@@ -56,5 +70,6 @@ def rows(issue_key, attachments, notes=None):
     notes = notes or {}
     return [{"issue": issue_key, "id": a["id"], "filename": a["filename"], "size": a.get("size", 0),
              "mimeType": a.get("mimeType", ""), "created": normalise_timestamp(a.get("created")),
-             "author": (a.get("author") or {}).get("displayName", ""), "saved_as": notes.get(a["id"], "")}
+             "author": (a.get("author") or {}).get("displayName", ""),
+             "saved_as": notes.get(a["id"], Note("")).saved_as, "sha256": notes.get(a["id"], Note("")).sha256}
             for a in attachments]

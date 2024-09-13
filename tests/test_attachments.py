@@ -27,7 +27,7 @@ class AttachmentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             notes = attachments.download_all(make_client(session), "PLAT-101", attached(), tmp)
             self.assertEqual(sorted(os.listdir(os.path.join(tmp, "PLAT-101"))), ["30001-login-trace.har", "30002-spinner.png"])
-            with open(notes["30001"], encoding="utf-8") as handle:
+            with open(notes["30001"].saved_as, encoding="utf-8") as handle:
                 self.assertEqual(handle.read(), "data for 30001")
         rows = attachments.rows("PLAT-101", attached(), notes)
         self.assertTrue(rows[0]["saved_as"].endswith("30001-login-trace.har"))
@@ -40,7 +40,7 @@ class AttachmentTests(unittest.TestCase):
                 handle.write(b"x" * 10394)
             notes = attachments.download_all(make_client(session), "PLAT-101", attached(), tmp)
         self.assertEqual([c["url"][-5:] for c in session.calls], ["30001"])
-        self.assertTrue(notes["30002"].endswith("30002-spinner.png"))
+        self.assertTrue(notes["30002"].saved_as.endswith("30002-spinner.png"))
 
     def test_a_file_with_the_wrong_size_is_fetched_again(self):
         session = FakeSession().add("GET", r"/attachment/content/\d+$", FakeResponse(200, "x" * 10394))
@@ -62,7 +62,7 @@ class AttachmentTests(unittest.TestCase):
             inside = sorted(os.listdir(os.path.join(tmp, "PLAT-1")))
             self.assertEqual(os.listdir(tmp), ["PLAT-1"])
         self.assertEqual(inside, ["1-job", "2-boot.ini", "3-attachment"])
-        self.assertTrue(all(note.startswith(tmp) for note in notes.values()))
+        self.assertTrue(all(note.startswith(tmp) for note in (n.saved_as for n in notes.values())))
 
     def test_safe_filename(self):
         self.assertEqual(attachments.safe_filename("report final.pdf"), "report final.pdf")
@@ -83,12 +83,25 @@ class AttachmentTests(unittest.TestCase):
             self.assertEqual(attachments.download_all(make_client(FakeSession()), "PLAT-102", [], tmp, workers=3), {})
             self.assertEqual(os.listdir(tmp), [])
 
+    def test_checksums(self):
+        import hashlib
+        session = FakeSession().add("GET", r"/attachment/content/\d+$", FakeResponse(200, "hello"))
+        with tempfile.TemporaryDirectory() as tmp:
+            notes = attachments.download_all(make_client(session), "PLAT-101", attached(), tmp)
+            again = attachments.download_all(make_client(FakeSession()), "PLAT-101", [dict(a, size=5) for a in attached()], tmp)
+        expected = hashlib.sha256(b"hello").hexdigest()
+        self.assertEqual([n.sha256 for n in notes.values()], [expected, expected])
+        self.assertEqual([n.sha256 for n in again.values()], [expected, expected])
+        rows = attachments.rows("PLAT-101", attached(), notes)
+        self.assertEqual(rows[0]["sha256"], expected)
+        self.assertEqual(attachments.rows("PLAT-101", attached())[0]["sha256"], "")
+
     def test_size_limit(self):
         session = FakeSession().add("GET", r"/attachment/content/\d+$", FakeResponse(200, "x"))
         with tempfile.TemporaryDirectory() as tmp:
             notes = attachments.download_all(make_client(session), "PLAT-101", attached(), tmp, max_bytes=20000)
-        self.assertTrue(notes["30001"].startswith("skipped"))
-        self.assertTrue(notes["30002"].endswith("30002-spinner.png"))
+        self.assertTrue(notes["30001"].saved_as.startswith("skipped"))
+        self.assertTrue(notes["30002"].saved_as.endswith("30002-spinner.png"))
         self.assertEqual(len(session.calls), 1)
 
     def test_failed_download_does_not_stop_the_rest(self):
@@ -97,8 +110,8 @@ class AttachmentTests(unittest.TestCase):
         session.add("GET", r"/content/30002$", FakeResponse(200, "png"))
         with tempfile.TemporaryDirectory() as tmp:
             notes = attachments.download_all(make_client(session), "PLAT-101", attached(), tmp)
-        self.assertEqual(notes["30001"], "failed: HTTP 403")
-        self.assertTrue(notes["30002"].endswith("spinner.png"))
+        self.assertEqual(notes["30001"].saved_as, "failed: HTTP 403")
+        self.assertTrue(notes["30002"].saved_as.endswith("spinner.png"))
 
 
 if __name__ == "__main__":
