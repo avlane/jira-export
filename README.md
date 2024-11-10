@@ -25,6 +25,7 @@ Options:
 | `--manifest` | write `<output>.manifest.json` listing the files and row counts |
 | `--raw-csv` | do not put a quote in front of CSV cells that start with `=`, `+`, `@` or `-` (they are defused by default) |
 | `--excel` | start CSV files with a UTF-8 byte order mark so Excel shows accents correctly |
+| `--enhanced-search` | use the enhanced search endpoint (`search/jql`, token paging) instead of the classic one |
 | `--limit N` | stop after N issues |
 | `--columns A,B,C` | only these columns of the main file, in this order |
 | `-f`, `--format` | `csv` (default), `json` (one array) or `jsonl` (one issue per line) |

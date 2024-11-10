@@ -31,3 +31,25 @@ def search(client, jql, fields=DEFAULT_FIELDS, expand=(), page_size=100):
         start += len(batch)
         if not batch or start >= data["total"]:
             return
+
+
+def search_enhanced(client, jql, fields=DEFAULT_FIELDS, expand=(), page_size=100):
+    """Yield issues through the enhanced search (search/jql).
+
+    It pages with an opaque nextPageToken and returns no total. The request is
+    always a POST, so long queries need no special case. In this endpoint
+    `expand` is one comma-separated string rather than a list.
+    """
+    token = None
+    while True:
+        body = {"jql": jql, "maxResults": page_size, "fields": list(fields)}
+        if expand:
+            body["expand"] = ",".join(expand)
+        if token:
+            body["nextPageToken"] = token
+        data = client.request("POST", "search/jql", body=body)
+        for issue in data.get("issues", []):
+            yield issue
+        token = data.get("nextPageToken")
+        if not token or data.get("isLast"):
+            return

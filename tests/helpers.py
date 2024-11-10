@@ -136,3 +136,19 @@ def since_handler(issues):
             picked = [i for i in issues if i["fields"]["updated"][:16].replace("T", " ") >= stamp]
         return search_handler(picked)(call)
     return handler
+
+
+def enhanced_handler(issues, cap=100):
+    """Behave like search/jql: opaque nextPageToken, no total, isLast on the final page."""
+    def handler(call):
+        body = call["json"]
+        start = int(body["nextPageToken"]) if body.get("nextPageToken") else 0
+        size = min(int(body.get("maxResults", 50)), cap)
+        page = issues[start:start + size]
+        data = {"issues": page}
+        if start + size < len(issues):
+            data["nextPageToken"] = str(start + size)
+        else:
+            data["isLast"] = True
+        return data
+    return handler

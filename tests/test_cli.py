@@ -114,6 +114,13 @@ class CliTests(unittest.TestCase):
         code, text, _ = run(["--jql", "project = PLAT", "--raw-csv"], session)
         self.assertEqual(list(csv.DictReader(io.StringIO(text)))[0]["summary"], "=cmd|' /C calc'!A0")
 
+    def test_enhanced_search(self):
+        from tests.helpers import enhanced_handler
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json"), cap=2))
+        code, text, _ = run(["--jql", "project = PLAT", "--enhanced-search"], session)
+        self.assertEqual([r["key"] for r in csv.DictReader(io.StringIO(text))], ["PLAT-101", "PLAT-102", "PLAT-103"])
+        self.assertEqual(len(session.calls), 2)
+
     def test_limit(self):
         code, text, err = run(["--jql", "project = PLAT", "--limit", "2"])
         self.assertEqual([r["key"] for r in csv.DictReader(io.StringIO(text))], ["PLAT-101", "PLAT-102"])

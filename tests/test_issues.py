@@ -2,7 +2,7 @@ import unittest
 
 from jiraexport import issues
 from jiraexport.client import JiraClient
-from tests.helpers import FakeSession, load, search_handler
+from tests.helpers import FakeSession, enhanced_handler, load, search_handler
 
 
 def make(handler):
@@ -52,6 +52,27 @@ class SearchTests(unittest.TestCase):
     def test_no_matches(self):
         client, session = make(search_handler([]))
         self.assertEqual(list(issues.search(client, "project = NONE")), [])
+        self.assertEqual(len(session.calls), 1)
+
+
+class EnhancedSearchTests(unittest.TestCase):
+    def make(self, handler):
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", handler)
+        return JiraClient("https://example.atlassian.net", session=session), session
+
+    def test_follows_next_page_token(self):
+        client, session = self.make(enhanced_handler(load("issues.json")))
+        got = list(issues.search_enhanced(client, "project = PLAT", fields=("summary",), expand=("changelog", "renderedFields"), page_size=2))
+        self.assertEqual([i["key"] for i in got], ["PLAT-101", "PLAT-102", "PLAT-103"])
+        first, second = [c["json"] for c in session.calls]
+        self.assertNotIn("nextPageToken", first)
+        self.assertEqual(second["nextPageToken"], "2")
+        self.assertEqual(first["fields"], ["summary"])
+        self.assertEqual(first["expand"], "changelog,renderedFields")
+
+    def test_no_matches(self):
+        client, session = self.make(enhanced_handler([]))
+        self.assertEqual(list(issues.search_enhanced(client, "project = NONE")), [])
         self.assertEqual(len(session.calls), 1)
 
 

@@ -5,7 +5,8 @@ import logging
 import os
 import sys
 
-from . import attachments, changelog, comments, config, exporter, fieldmap, incremental, jqlbuild, links, manifest, worklogs, writers
+from . import (attachments, changelog, comments, config, exporter, fieldmap, incremental, issues, jqlbuild, links, manifest,
+               worklogs, writers)
 from .client import JiraClient, JiraError
 from .exporter import Extra
 from .flatten import columns as flat_columns
@@ -23,6 +24,8 @@ def build_parser():
                         help="add a column for a field, by id or name (repeatable), e.g. 'Story point estimate=points'")
     parser.add_argument("--excel", action="store_true", help="start CSV files with a UTF-8 byte order mark so Excel reads accents correctly")
     parser.add_argument("--raw-csv", action="store_true", help="do not defuse cells that start with = + @ or -")
+    parser.add_argument("--enhanced-search", action="store_true",
+                        help="use the enhanced search endpoint (search/jql) instead of the classic one")
     parser.add_argument("--limit", type=int, metavar="N", help="stop after N issues")
     parser.add_argument("--columns", metavar="A,B,C", help="only these columns of the main file, in this order")
     parser.add_argument("--html", action="store_true", help="add a description_html column with Jira's rendered HTML")
@@ -151,7 +154,8 @@ def main(argv=None, client=None, out=None):
             seen = []
             try:
                 skip = (lambda issue: incremental.already_exported(tracker, issue)) if appending else None
-                count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip, custom=custom, html=args.html, limit=args.limit, only=only)
+                count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip, custom=custom, html=args.html, limit=args.limit, only=only,
+                                        search=issues.search_enhanced if args.enhanced_search else issues.search)
             finally:
                 main_sink.close()
         if args.incremental:
