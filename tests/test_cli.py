@@ -121,6 +121,15 @@ class CliTests(unittest.TestCase):
         self.assertEqual([r["key"] for r in csv.DictReader(io.StringIO(text))], ["PLAT-101", "PLAT-102", "PLAT-103"])
         self.assertEqual(len(session.calls), 2)
 
+    def test_enhanced_search_with_incremental_and_extras(self):
+        import json
+        from tests.helpers import enhanced_handler
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        code, text, _ = run(["--jql", "project = PLAT", "--enhanced-search", "--format", "jsonl", "--changelog", "--limit", "1"], session)
+        record = json.loads(text.splitlines()[0])
+        self.assertEqual(len(record["changelog"]), 4)
+        self.assertEqual(session.calls[0]["json"]["expand"], "changelog")
+
     def test_limit(self):
         code, text, err = run(["--jql", "project = PLAT", "--limit", "2"])
         self.assertEqual([r["key"] for r in csv.DictReader(io.StringIO(text))], ["PLAT-101", "PLAT-102"])

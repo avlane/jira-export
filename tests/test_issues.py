@@ -70,6 +70,24 @@ class EnhancedSearchTests(unittest.TestCase):
         self.assertEqual(first["fields"], ["summary"])
         self.assertEqual(first["expand"], "changelog,renderedFields")
 
+    def test_a_server_side_page_cap_is_followed(self):
+        client, session = self.make(enhanced_handler(load("issues.json"), cap=1))
+        got = list(issues.search_enhanced(client, "project = PLAT", page_size=100))
+        self.assertEqual(len(got), 3)
+        self.assertEqual([c["json"].get("nextPageToken") for c in session.calls], [None, "1", "2"])
+
+    def test_stops_on_is_last_even_if_a_token_is_present(self):
+        page = {"issues": [{"id": "1", "key": "A-1", "fields": {}}], "nextPageToken": "x", "isLast": True}
+        client, session = self.make(page)
+        self.assertEqual(len(list(issues.search_enhanced(client, "project = A"))), 1)
+        self.assertEqual(len(session.calls), 1)
+
+    def test_long_queries_need_no_special_case(self):
+        client, session = self.make(enhanced_handler([]))
+        jql = "issue in ({})".format(",".join("A-%d" % n for n in range(1000)))
+        list(issues.search_enhanced(client, jql))
+        self.assertEqual(session.calls[0]["json"]["jql"], jql)
+
     def test_no_matches(self):
         client, session = self.make(enhanced_handler([]))
         self.assertEqual(list(issues.search_enhanced(client, "project = NONE")), [])
