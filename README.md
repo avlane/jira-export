@@ -39,8 +39,26 @@ Options:
 | `--download-workers N` | fetch an issue's attachments with N threads |
 | `--max-attachment-mb N` | skip downloading anything larger |
 
-Rich text (descriptions, comments) is converted from Atlassian Document Format to plain
-text. Timestamps are written as ISO 8601 with a colon in the offset.
+## Output
+
+With `--format csv` the main file has one row per issue. Comments, worklogs, the change history,
+links and attachment metadata go to files next to it (`issues.csv` gives `issues-comments.csv`,
+`issues-worklogs.csv`, `issues-changelog.csv`, `issues-links.csv` and `issues-attachments.csv`), each
+row carrying the issue key. With `json` or `jsonl` they are nested inside each issue instead, so no
+`--output` is needed.
+
+Rich text (descriptions, comments) is converted from Atlassian Document Format to plain text.
+Timestamps are ISO 8601 with a colon in the offset. Estimates are in seconds. Cells that could be
+read as spreadsheet formulas get a leading quote unless you pass `--raw-csv`.
+
+## Incremental exports
+
+    jira-export -p PLAT -o plat.jsonl -f jsonl --incremental plat.state
+
+The first run exports everything and records the newest `updated` time it saw. Later runs
+only ask for issues updated since then and append them; issues from the final minute of the
+previous run (JQL has minute precision) are skipped rather than written twice. Changing
+the query starts again from the beginning.
 
 ## Configuration
 
