@@ -89,6 +89,11 @@ def build_extras(args):
 def open_for_output(stack, path, appending, bom=False):
     """Open an output file; when appending to a non-empty file the CSV header must not be repeated."""
     header = not (appending and os.path.exists(path) and os.path.getsize(path) > 0)
+    if appending and not header and not path.endswith(".gz"):
+        with open(path, "rb+") as existing:  # a previous run may have been killed mid-line
+            existing.seek(-1, os.SEEK_END)
+            if existing.read(1) != b"\n":
+                existing.write(b"\n")
     handle = stack.enter_context(writers.open_text(path, "a" if appending else "w", bom))
     return handle, header
 

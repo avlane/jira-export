@@ -235,6 +235,22 @@ class CliTests(unittest.TestCase):
         self.assertEqual(saved["last_updated"], "2021-02-13T09:00:00.000+00:00")
         self.assertEqual(saved["runs"], 2)
 
+    def test_appending_to_a_file_without_a_final_newline(self):
+        import json
+        everything = load("issues.json")
+        with tempfile.TemporaryDirectory() as tmp:
+            path, state = os.path.join(tmp, "issues.jsonl"), os.path.join(tmp, "state.json")
+            first = FakeSession().add("GET", r"/rest/api/3/search$", since_handler(everything[:2]))
+            run(["--jql", "project = PLAT", "-o", path, "-f", "jsonl", "--incremental", state], first)
+            with open(path, "rb+") as handle:  # simulate a run that died before the newline
+                handle.seek(-1, os.SEEK_END)
+                handle.truncate()
+            second = FakeSession().add("GET", r"/rest/api/3/search$", since_handler(everything))
+            run(["--jql", "project = PLAT", "-o", path, "-f", "jsonl", "--incremental", state], second)
+            with open(path, encoding="utf-8") as handle:
+                records = [json.loads(line) for line in handle.read().splitlines()]
+        self.assertEqual([r["key"] for r in records], ["PLAT-101", "PLAT-102", "PLAT-103"])
+
     def test_incremental_needs_a_file_and_an_appendable_format(self):
         code, _, err = run(["--jql", "project = PLAT", "--incremental", "state.json"])
         self.assertEqual(code, 2)
