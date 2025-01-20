@@ -24,8 +24,9 @@ def build_parser():
                         help="add a column for a field, by id or name (repeatable), e.g. 'Story point estimate=points'")
     parser.add_argument("--excel", action="store_true", help="start CSV files with a UTF-8 byte order mark so Excel reads accents correctly")
     parser.add_argument("--raw-csv", action="store_true", help="do not defuse cells that start with = + @ or -")
-    parser.add_argument("--enhanced-search", action="store_true",
-                        help="use the enhanced search endpoint (search/jql) instead of the classic one")
+    parser.add_argument("--classic-search", action="store_true",
+                        help="use the classic search endpoint, which Atlassian is retiring, instead of search/jql")
+    parser.add_argument("--enhanced-search", action="store_true", help="accepted for compatibility; this is now the default")
     parser.add_argument("--limit", type=int, metavar="N", help="stop after N issues")
     parser.add_argument("--columns", metavar="A,B,C", help="only these columns of the main file, in this order")
     parser.add_argument("--html", action="store_true", help="add a description_html column with Jira's rendered HTML")
@@ -160,7 +161,7 @@ def main(argv=None, client=None, out=None):
             try:
                 skip = (lambda issue: incremental.already_exported(tracker, issue)) if appending else None
                 count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip, custom=custom, html=args.html, limit=args.limit, only=only,
-                                        search=issues.search_enhanced if args.enhanced_search else issues.search)
+                                        search=issues.search if args.classic_search else issues.search_enhanced)
             finally:
                 main_sink.close()
         if args.incremental:

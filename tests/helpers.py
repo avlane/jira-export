@@ -152,3 +152,30 @@ def enhanced_handler(issues, cap=100):
             data["isLast"] = True
         return data
     return handler
+
+
+def enhanced_since_handler(issues):
+    """enhanced_handler that first applies an `updated >= "YYYY-MM-DD HH:mm"` clause from the query."""
+    import re
+
+    def handler(call):
+        found = re.search(r'updated >= "(\d{4}-\d{2}-\d{2} \d{2}:\d{2})"', call["json"]["jql"])
+        picked = issues
+        if found:
+            stamp = found.group(1)
+            picked = [i for i in issues if i["fields"]["updated"][:16].replace("T", " ") >= stamp]
+        return enhanced_handler(picked)(call)
+    return handler
+
+
+def bulkfetch_handler(issues, failing=()):
+    """Behave like issue/bulkfetch: answer in a different order than asked, report ids that fail."""
+    def handler(call):
+        wanted = [str(i) for i in call["json"]["issueIdsOrKeys"]]
+        assert len(wanted) <= 100, "bulk fetch takes at most 100 issues"
+        found = [i for i in reversed(issues) if i["id"] in wanted or i["key"] in wanted]
+        found = [i for i in found if i["id"] not in failing]
+        errors = [{"issueIdsOrKeys": [i], "errorMessage": "Issue does not exist or you do not have permission to see it."}
+                  for i in wanted if i in failing]
+        return {"issues": found, "issueErrors": errors}
+    return handler
