@@ -53,3 +53,8 @@ def search_enhanced(client, jql, fields=DEFAULT_FIELDS, expand=(), page_size=100
         token = data.get("nextPageToken")
         if not token or data.get("isLast"):
             return
+
+
+def approximate_count(client, jql):
+    """Estimated number of matching issues. The enhanced search returns no total, so this is the only cheap way to know."""
+    return client.request("POST", "search/approximate-count", body={"jql": jql})["count"]

@@ -55,6 +55,14 @@ class SearchTests(unittest.TestCase):
         self.assertEqual(len(session.calls), 1)
 
 
+class ApproximateCountTests(unittest.TestCase):
+    def test_reads_the_count(self):
+        session = FakeSession().add("POST", r"/search/approximate-count$", {"count": 4321})
+        client = JiraClient("https://example.atlassian.net", session=session)
+        self.assertEqual(issues.approximate_count(client, "project = PLAT"), 4321)
+        self.assertEqual(session.calls[0]["json"], {"jql": "project = PLAT"})
+
+
 class EnhancedSearchTests(unittest.TestCase):
     def make(self, handler):
         session = FakeSession().add("POST", r"/rest/api/3/search/jql$", handler)

@@ -20,5 +20,19 @@ class ProgressLoggingTests(unittest.TestCase):
                                            "INFO:jiraexport:export finished: 3 issues"])
 
 
+class EstimateTests(unittest.TestCase):
+    def test_estimate_appears_in_progress_messages(self):
+        session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
+        client = JiraClient("https://example.atlassian.net", session=session)
+        sink = writers.open_sink("jsonl", io.StringIO(), ())
+        old = exporter.PROGRESS_EVERY
+        exporter.PROGRESS_EVERY = 3
+        self.addCleanup(setattr, exporter, "PROGRESS_EVERY", old)
+        with self.assertLogs("jiraexport", level="INFO") as captured:
+            exporter.export(client, "project = PLAT", sink, estimate=250)
+        self.assertEqual(captured.output[0], "INFO:jiraexport:about 250 issues match")
+        self.assertEqual(captured.output[1], "INFO:jiraexport:exported 3 of about 250 issues (last: PLAT-103)")
+
+
 if __name__ == "__main__":
     unittest.main()

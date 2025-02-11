@@ -13,7 +13,7 @@ PROGRESS_EVERY = 100
 Extra = namedtuple("Extra", "name fields columns collect expand", defaults=((),))
 
 
-def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fields=issues.DEFAULT_FIELDS, observe=None, skip=None, custom=(), html=False, limit=None, only=None, search=issues.search):
+def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fields=issues.DEFAULT_FIELDS, observe=None, skip=None, custom=(), html=False, limit=None, only=None, search=issues.search, estimate=None):
     """Write every matching issue to main_sink; return how many were written.
 
     With nested=True each extra's rows are stored inside the issue row (JSON
@@ -21,6 +21,8 @@ def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fie
     """
     wanted = tuple(fields) + tuple(f.id for f in custom) + tuple(f for extra in extras for f in extra.fields)
     expand = tuple(e for extra in extras for e in extra.expand) + (("renderedFields",) if html else ())
+    if estimate is not None:
+        log.info("about %d issues match", estimate)
     for issue in search(client, jql, fields=wanted, expand=expand):
         if skip is not None and skip(issue):
             continue
@@ -40,6 +42,9 @@ def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fie
         if observe is not None:
             observe(issue)
         if main_sink.count % PROGRESS_EVERY == 0:
-            log.info("exported %d issues (last: %s)", main_sink.count, issue["key"])
+            if estimate:
+                log.info("exported %d of about %d issues (last: %s)", main_sink.count, estimate, issue["key"])
+            else:
+                log.info("exported %d issues (last: %s)", main_sink.count, issue["key"])
     log.info("export finished: %d issues", main_sink.count)
     return main_sink.count

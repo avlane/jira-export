@@ -158,10 +158,17 @@ def main(argv=None, client=None, out=None):
                     handle, side_header = open_for_output(stack, sidecar_path(args.output, extra.name), appending, args.excel)
                     side_sinks[extra.name] = writers.open_sink("csv", handle, extra.columns, side_header, not args.raw_csv)
             seen = []
+            estimate = None
+            if args.verbose and not args.classic_search:  # an extra request, so only when someone is watching
+                try:
+                    estimate = issues.approximate_count(client, jql)
+                except JiraError as exc:
+                    logging.getLogger("jiraexport").info("no estimate available: %s", exc)
             try:
                 skip = (lambda issue: incremental.already_exported(tracker, issue)) if appending else None
                 count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip, custom=custom, html=args.html, limit=args.limit, only=only,
-                                        search=issues.search if args.classic_search else issues.search_enhanced)
+                                        search=issues.search if args.classic_search else issues.search_enhanced,
+                                        estimate=estimate)
             finally:
                 main_sink.close()
         if args.incremental:

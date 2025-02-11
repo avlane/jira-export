@@ -122,6 +122,15 @@ class CliTests(unittest.TestCase):
         self.assertEqual(len(list(csv.DictReader(io.StringIO(text)))), 3)
         self.assertEqual(session.calls[0]["method"], "GET")
 
+    def test_verbose_runs_ask_for_an_estimate(self):
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        session.add("POST", r"/search/approximate-count$", {"count": 3})
+        code, _, _ = run(["--jql", "project = PLAT", "-v"], session)
+        self.assertEqual(len(session.calls_to("POST", "/search/approximate-count")), 1)
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        code, _, _ = run(["--jql", "project = PLAT"], session)
+        self.assertEqual(session.calls_to("POST", "/search/approximate-count"), [])
+
     def test_search_jql_is_the_default(self):
         session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
         code, _, _ = run(["--jql", "project = PLAT"], session)
