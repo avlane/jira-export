@@ -24,6 +24,8 @@ def build_parser():
                         help="add a column for a field, by id or name (repeatable), e.g. 'Story point estimate=points'")
     parser.add_argument("--excel", action="store_true", help="start CSV files with a UTF-8 byte order mark so Excel reads accents correctly")
     parser.add_argument("--raw-csv", action="store_true", help="do not defuse cells that start with = + @ or -")
+    parser.add_argument("--bulk-fetch", action="store_true",
+                        help="search for ids first, then fetch issues in batches of 100 (helps with very large fields)")
     parser.add_argument("--classic-search", action="store_true",
                         help="use the classic search endpoint, which Atlassian is retiring, instead of search/jql")
     parser.add_argument("--enhanced-search", action="store_true", help="accepted for compatibility; this is now the default")
@@ -99,6 +101,12 @@ def open_for_output(stack, path, appending, bom=False):
     return handle, header
 
 
+def choose_search(args):
+    if args.classic_search:
+        return issues.search
+    return issues.search_hydrated if args.bulk_fetch else issues.search_enhanced
+
+
 def setup_logging(verbosity):
     level = logging.WARNING if verbosity == 0 else logging.INFO if verbosity == 1 else logging.DEBUG
     logging.basicConfig(level=level, format="%(levelname)s %(message)s", stream=sys.stderr)
@@ -167,8 +175,7 @@ def main(argv=None, client=None, out=None):
             try:
                 skip = (lambda issue: incremental.already_exported(tracker, issue)) if appending else None
                 count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip, custom=custom, html=args.html, limit=args.limit, only=only,
-                                        search=issues.search if args.classic_search else issues.search_enhanced,
-                                        estimate=estimate)
+                                        search=choose_search(args), estimate=estimate)
             finally:
                 main_sink.close()
         if args.incremental:

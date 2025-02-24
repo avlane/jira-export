@@ -1,4 +1,5 @@
 """Fetching issues by JQL."""
+import json
 
 DEFAULT_FIELDS = ("summary", "issuetype", "status", "priority", "assignee", "reporter", "created", "updated",
                   "resolution", "labels", "components", "fixVersions", "project", "description", "parent", "subtasks", "timeoriginalestimate", "timeestimate", "timespent")
@@ -58,3 +59,43 @@ def search_enhanced(client, jql, fields=DEFAULT_FIELDS, expand=(), page_size=100
 def approximate_count(client, jql):
     """Estimated number of matching issues. The enhanced search returns no total, so this is the only cheap way to know."""
     return client.request("POST", "search/approximate-count", body={"jql": jql})["count"]
+
+
+BULK_LIMIT = 100
+
+
+def bulk_fetch(client, ids, fields=DEFAULT_FIELDS, expand=()):
+    """Fetch full issues by id or key with the bulk fetch endpoint. Returns (issues, errors); at most 100 ids."""
+    if len(ids) > BULK_LIMIT:
+        raise ValueError("bulk fetch takes at most {} issues".format(BULK_LIMIT))
+    body = {"issueIdsOrKeys": list(ids), "fields": list(fields)}
+    if expand:
+        body["expand"] = list(expand)
+    data = client.request("POST", "issue/bulkfetch", body=body)
+    return data.get("issues", []), data.get("issueErrors", [])
+
+
+def search_hydrated(client, jql, fields=DEFAULT_FIELDS, expand=(), page_size=100):
+    """Search for issue ids only, then fetch their content in batches.
+
+    Keeps the search pages small and fast for exports with big fields (changelog,
+    rendered HTML). Issues come back in search order.
+    """
+    from .client import JiraError
+
+    batch = []
+
+    def flush():
+        found, errors = bulk_fetch(client, [i["id"] for i in batch], fields, expand)
+        if errors:
+            raise JiraError("bulk fetch could not read {} issue(s): {}".format(len(errors), json.dumps(errors)[:300]))
+        by_id = {issue["id"]: issue for issue in found}
+        return [by_id[i["id"]] for i in batch if i["id"] in by_id]
+
+    for stub in search_enhanced(client, jql, fields=("id",), page_size=page_size):
+        batch.append(stub)
+        if len(batch) == BULK_LIMIT:
+            yield from flush()
+            batch = []
+    if batch:
+        yield from flush()

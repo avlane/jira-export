@@ -1,6 +1,7 @@
 import contextlib
 import csv
 import io
+import json
 import os
 import tempfile
 import unittest
@@ -130,6 +131,15 @@ class CliTests(unittest.TestCase):
         session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
         code, _, _ = run(["--jql", "project = PLAT"], session)
         self.assertEqual(session.calls_to("POST", "/search/approximate-count"), [])
+
+    def test_bulk_fetch_mode(self):
+        from tests.helpers import bulkfetch_handler
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        session.add("POST", r"/rest/api/3/issue/bulkfetch$", bulkfetch_handler(load("issues.json")))
+        code, text, _ = run(["--jql", "project = PLAT", "--bulk-fetch", "--changelog", "--format", "jsonl"], session)
+        self.assertEqual(code, 0)
+        self.assertEqual([json.loads(l)["key"] for l in text.splitlines()], ["PLAT-101", "PLAT-102", "PLAT-103"])
+        self.assertEqual(session.calls_to("POST", "/issue/bulkfetch")[0]["json"]["expand"], ["changelog"])
 
     def test_search_jql_is_the_default(self):
         session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
