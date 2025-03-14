@@ -1,5 +1,8 @@
 """Fetching issues by JQL."""
 import json
+import logging
+
+log = logging.getLogger("jiraexport")
 
 DEFAULT_FIELDS = ("summary", "issuetype", "status", "priority", "assignee", "reporter", "created", "updated",
                   "resolution", "labels", "components", "fixVersions", "project", "description", "parent", "subtasks", "timeoriginalestimate", "timeestimate", "timespent")
@@ -75,20 +78,22 @@ def bulk_fetch(client, ids, fields=DEFAULT_FIELDS, expand=()):
     return data.get("issues", []), data.get("issueErrors", [])
 
 
-def search_hydrated(client, jql, fields=DEFAULT_FIELDS, expand=(), page_size=100):
+def search_hydrated(client, jql, fields=DEFAULT_FIELDS, expand=(), page_size=100, failures=None):
     """Search for issue ids only, then fetch their content in batches.
 
     Keeps the search pages small and fast for exports with big fields (changelog,
-    rendered HTML). Issues come back in search order.
+    rendered HTML). Issues come back in search order. Ids the bulk fetch refuses
+    are logged and, if a list is passed as `failures`, appended to it.
     """
-    from .client import JiraError
-
     batch = []
 
     def flush():
         found, errors = bulk_fetch(client, [i["id"] for i in batch], fields, expand)
-        if errors:
-            raise JiraError("bulk fetch could not read {} issue(s): {}".format(len(errors), json.dumps(errors)[:300]))
+        for problem in errors:
+            # An issue deleted or hidden between the search and the fetch must not sink the whole export.
+            log.warning("could not fetch %s: %s", ", ".join(problem.get("issueIdsOrKeys", [])), problem.get("errorMessage") or json.dumps(problem)[:200])
+            if failures is not None:
+                failures.extend(problem.get("issueIdsOrKeys", []))
         by_id = {issue["id"]: issue for issue in found}
         return [by_id[i["id"]] for i in batch if i["id"] in by_id]
 

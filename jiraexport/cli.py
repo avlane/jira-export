@@ -1,6 +1,7 @@
 """Command line entry point: jira-export --jql ... --output issues.csv"""
 import argparse
 import contextlib
+import functools
 import logging
 import os
 import sys
@@ -101,10 +102,12 @@ def open_for_output(stack, path, appending, bom=False):
     return handle, header
 
 
-def choose_search(args):
+def choose_search(args, failures):
     if args.classic_search:
         return issues.search
-    return issues.search_hydrated if args.bulk_fetch else issues.search_enhanced
+    if args.bulk_fetch:
+        return functools.partial(issues.search_hydrated, failures=failures)
+    return issues.search_enhanced
 
 
 def setup_logging(verbosity):
@@ -165,7 +168,7 @@ def main(argv=None, client=None, out=None):
                 for extra in extras:
                     handle, side_header = open_for_output(stack, sidecar_path(args.output, extra.name), appending, args.excel)
                     side_sinks[extra.name] = writers.open_sink("csv", handle, extra.columns, side_header, not args.raw_csv)
-            seen = []
+            seen, failures = [], []
             estimate = None
             if args.verbose and not args.classic_search:  # an extra request, so only when someone is watching
                 try:
@@ -175,7 +178,7 @@ def main(argv=None, client=None, out=None):
             try:
                 skip = (lambda issue: incremental.already_exported(tracker, issue)) if appending else None
                 count = exporter.export(client, jql, main_sink, extras, side_sinks, nested, observe=seen.append, skip=skip, custom=custom, html=args.html, limit=args.limit, only=only,
-                                        search=choose_search(args), estimate=estimate)
+                                        search=choose_search(args, failures), estimate=estimate)
             finally:
                 main_sink.close()
         if args.incremental:
@@ -188,4 +191,7 @@ def main(argv=None, client=None, out=None):
         print("error: {}".format(exc), file=sys.stderr)
         return 2
     print("exported {} issues".format(count), file=sys.stderr)
+    if failures:
+        print("warning: {} issue(s) could not be fetched: {}".format(len(failures), ", ".join(failures)), file=sys.stderr)
+        return 1
     return 0

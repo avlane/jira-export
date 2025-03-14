@@ -141,6 +141,15 @@ class CliTests(unittest.TestCase):
         self.assertEqual([json.loads(l)["key"] for l in text.splitlines()], ["PLAT-101", "PLAT-102", "PLAT-103"])
         self.assertEqual(session.calls_to("POST", "/issue/bulkfetch")[0]["json"]["expand"], ["changelog"])
 
+    def test_unreadable_issues_give_exit_code_1(self):
+        from tests.helpers import bulkfetch_handler
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        session.add("POST", r"/rest/api/3/issue/bulkfetch$", bulkfetch_handler(load("issues.json"), failing=("10103",)))
+        code, text, err = run(["--jql", "project = PLAT", "--bulk-fetch"], session)
+        self.assertEqual(code, 1)
+        self.assertEqual(len(list(csv.DictReader(io.StringIO(text)))), 2)
+        self.assertIn("1 issue(s) could not be fetched: 10103", err)
+
     def test_search_jql_is_the_default(self):
         session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
         code, _, _ = run(["--jql", "project = PLAT"], session)

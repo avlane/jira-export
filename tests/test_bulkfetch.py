@@ -1,7 +1,7 @@
 import unittest
 
 from jiraexport import issues
-from jiraexport.client import JiraClient, JiraError
+from jiraexport.client import JiraClient
 from tests.helpers import FakeSession, bulkfetch_handler, enhanced_handler, load
 
 
@@ -48,11 +48,19 @@ class BulkFetchTests(unittest.TestCase):
         sizes = [len(c["json"]["issueIdsOrKeys"]) for c in session.calls_to("POST", "/issue/bulkfetch")]
         self.assertEqual(sizes, [100, 100, 50])
 
-    def test_failures_raise(self):
+    def test_failures_are_skipped_and_reported(self):
         client, _ = make(failing=("10102",))
-        with self.assertRaises(JiraError) as ctx:
-            list(issues.search_hydrated(client, "project = PLAT"))
-        self.assertIn("could not read 1 issue", str(ctx.exception))
+        failures = []
+        with self.assertLogs("jiraexport", level="WARNING") as captured:
+            got = list(issues.search_hydrated(client, "project = PLAT", failures=failures))
+        self.assertEqual([i["key"] for i in got], ["PLAT-101", "PLAT-103"])
+        self.assertEqual(failures, ["10102"])
+        self.assertIn("could not fetch 10102", captured.output[0])
+
+    def test_failures_list_is_optional(self):
+        client, _ = make(failing=("10101",))
+        with self.assertLogs("jiraexport", level="WARNING"):
+            self.assertEqual(len(list(issues.search_hydrated(client, "project = PLAT"))), 2)
 
 
 if __name__ == "__main__":
