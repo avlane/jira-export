@@ -118,6 +118,9 @@ def setup_logging(verbosity):
 def main(argv=None, client=None, out=None):
     args = build_parser().parse_args(argv)
     setup_logging(args.verbose)
+    if args.classic_search:
+        print("warning: --classic-search will stop working when Atlassian retires the classic search resource; "
+              "drop the flag to use search/jql", file=sys.stderr)
     try:
         args.jql = jqlbuild.build(args.jql, args.project, args.status, args.updated_since)
     except jqlbuild.JqlError as exc:

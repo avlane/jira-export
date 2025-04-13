@@ -123,6 +123,14 @@ class CliTests(unittest.TestCase):
         self.assertEqual(len(list(csv.DictReader(io.StringIO(text)))), 3)
         self.assertEqual(session.calls[0]["method"], "GET")
 
+    def test_classic_search_warns(self):
+        from tests.helpers import search_handler
+        session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
+        code, _, err = run(["--jql", "project = PLAT", "--classic-search"], session)
+        self.assertIn("will stop working", err)
+        code, _, err = run(["--jql", "project = PLAT"])
+        self.assertNotIn("stop working", err)
+
     def test_verbose_runs_ask_for_an_estimate(self):
         session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
         session.add("POST", r"/search/approximate-count$", {"count": 3})
