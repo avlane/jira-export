@@ -31,6 +31,17 @@ class StateFileTests(unittest.TestCase):
         got = incremental.jql_since("project = PLAT", "2021-02-12T08:30:45.000+00:00")
         self.assertEqual(got, '(project = PLAT) AND updated >= "2021-02-12 08:30"')
 
+    def test_since_is_converted_to_the_users_time_zone(self):
+        since = "2025-01-15T14:05:30.000+00:00"
+        self.assertEqual(incremental.jql_since("project = A", since, "Europe/Dublin"), '(project = A) AND updated >= "2025-01-15 14:05"')
+        self.assertEqual(incremental.jql_since("project = A", since, "Australia/Sydney"), '(project = A) AND updated >= "2025-01-16 01:05"')
+        self.assertEqual(incremental.jql_since("project = A", "2025-07-15T14:05:00.000+00:00", "Europe/Dublin"), '(project = A) AND updated >= "2025-07-15 15:05"')
+
+    def test_unknown_zone_falls_back_to_the_recorded_offset(self):
+        with self.assertLogs("jiraexport", level="WARNING"):
+            got = incremental.jql_since("project = A", "2025-01-15T14:05:30.000+01:00", "Mars/Olympus")
+        self.assertEqual(got, '(project = A) AND updated >= "2025-01-15 14:05"')
+
     def test_order_by_stays_last_and_or_is_grouped(self):
         since = "2021-02-12T08:30:45.000+00:00"
         self.assertEqual(incremental.jql_since("project = PLAT OR project = OPS ORDER BY updated DESC, key", since),

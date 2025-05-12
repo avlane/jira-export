@@ -272,8 +272,9 @@ class CliTests(unittest.TestCase):
             self.assertEqual(saved["last_updated"], "2021-02-12T08:30:00.000+00:00")
             self.assertEqual(first.calls[0]["json"]["jql"], "project = PLAT")
             second = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_since_handler(everything + [newer]))
+            second.add("GET", r"/myself$", {"accountId": "x", "timeZone": "UTC"})
             code, _, err = run(["--jql", "project = PLAT", "-o", path, "--incremental", state], second)
-            self.assertEqual(second.calls[0]["json"]["jql"], '(project = PLAT) AND updated >= "2021-02-12 08:30"')
+            self.assertEqual(second.calls_to("POST", "/search/jql")[0]["json"]["jql"], '(project = PLAT) AND updated >= "2021-02-12 08:30"')
             with open(path, newline="", encoding="utf-8") as handle:
                 text = handle.read()
             with open(state, encoding="utf-8") as handle:
@@ -282,6 +283,18 @@ class CliTests(unittest.TestCase):
         self.assertEqual([r["key"] for r in csv.DictReader(io.StringIO(text))], ["PLAT-101", "PLAT-102", "PLAT-103", "PLAT-104"])
         self.assertEqual(saved["last_updated"], "2021-02-13T09:00:00.000+00:00")
         self.assertEqual(saved["runs"], 2)
+
+    def test_incremental_query_uses_the_users_time_zone(self):
+        everything = load("issues.json")
+        with tempfile.TemporaryDirectory() as tmp:
+            path, state = os.path.join(tmp, "issues.csv"), os.path.join(tmp, "state.json")
+            run(["--jql", "project = PLAT", "-o", path, "--incremental", state],
+                FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_since_handler(everything)))
+            second = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_since_handler(everything))
+            second.add("GET", r"/myself$", {"accountId": "x", "timeZone": "America/New_York"})
+            run(["--jql", "project = PLAT", "-o", path, "--incremental", state], second)
+        # 2021-02-12 08:30 UTC is 03:30 in New York (EST)
+        self.assertEqual(second.calls_to("POST", "/search/jql")[0]["json"]["jql"], '(project = PLAT) AND updated >= "2021-02-12 03:30"')
 
     def test_appending_to_a_file_without_a_final_newline(self):
         import json
@@ -294,6 +307,7 @@ class CliTests(unittest.TestCase):
                 handle.seek(-1, os.SEEK_END)
                 handle.truncate()
             second = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_since_handler(everything))
+            second.add("GET", r"/myself$", {"accountId": "x", "timeZone": "UTC"})
             run(["--jql", "project = PLAT", "-o", path, "-f", "jsonl", "--incremental", state], second)
             with open(path, encoding="utf-8") as handle:
                 records = [json.loads(line) for line in handle.read().splitlines()]

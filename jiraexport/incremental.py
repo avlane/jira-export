@@ -1,8 +1,12 @@
 """Incremental exports: remember how far the previous run got."""
 import json
+import logging
 import os
 import re
 from datetime import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+log = logging.getLogger("jiraexport")
 
 VERSION = 1
 
@@ -56,14 +60,28 @@ def split_order_by(jql):
     return jql.strip(), ""
 
 
-def jql_since(jql, since):
+def user_timezone(client):
+    """The API user's time zone name, or None. JQL date literals are read in this zone."""
+    return client.get("myself").get("timeZone")
+
+
+def jql_since(jql, since, tz=None):
     """Narrow a query to issues updated at or after `since` (JQL only has minute precision).
+
+    JQL reads "2025-03-01 09:30" in the *user's* time zone, so `since` is
+    converted to the zone named by `tz` (from user_timezone) first.
 
     The original conditions are parenthesised so an OR cannot swallow the new
     clause, and any ORDER BY stays at the end where JQL requires it.
     """
     where, order = split_order_by(jql)
-    clause = 'updated >= "{}"'.format(parse(since).strftime("%Y-%m-%d %H:%M"))
+    moment = parse(since)
+    if tz:
+        try:
+            moment = moment.astimezone(ZoneInfo(tz))
+        except (ZoneInfoNotFoundError, ValueError):
+            log.warning("unknown time zone %r; using the offset recorded with the timestamp", tz)
+    clause = 'updated >= "{}"'.format(moment.strftime("%Y-%m-%d %H:%M"))
     narrowed = "({}) AND {}".format(where, clause) if where else clause
     return "{} {}".format(narrowed, order) if order else narrowed
 

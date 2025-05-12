@@ -156,7 +156,7 @@ def main(argv=None, client=None, out=None):
                 print("warning: the query changed since the last run; exporting everything again", file=sys.stderr)
                 previous = None
             if previous and previous["last_updated"]:
-                jql, appending = incremental.jql_since(args.jql, previous["last_updated"]), True
+                jql, appending = incremental.jql_since(args.jql, previous["last_updated"], incremental.user_timezone(client)), True
             tracker = previous or incremental.fresh(args.jql)
         with contextlib.ExitStack() as stack:
             if args.output:
