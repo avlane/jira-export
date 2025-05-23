@@ -77,6 +77,23 @@ class AdfTests(unittest.TestCase):
         doc = {"type": "doc", "content": [{"type": "mediaSingle", "content": [{"type": "media", "attrs": {"id": "abc", "type": "file", "alt": "spinner.png"}}]}]}
         self.assertEqual(adf.to_text(doc), "[media: spinner.png]")
 
+    def test_task_list(self):
+        item = lambda state, value: {"type": "taskItem", "attrs": {"localId": "task-1", "state": state}, "content": [text(value)]}
+        doc = {"type": "doc", "content": [{"type": "taskList", "attrs": {"localId": "l"}, "content": [item("DONE", "write tests"), item("TODO", "ship it")]}]}
+        self.assertEqual(adf.to_text(doc), "[x] write tests\n[ ] ship it")
+
+    def test_decisions(self):
+        item = lambda state, value: {"type": "decisionItem", "attrs": {"localId": "d", "state": state}, "content": [text(value)]}
+        doc = {"type": "doc", "content": [{"type": "decisionList", "content": [item("DECIDED", "use search/jql"), item("UNDECIDED", "drop Python 3.9?")]}]}
+        self.assertEqual(adf.to_text(doc), "Decision: use search/jql\nDecision (open): drop Python 3.9?")
+
+    def test_extensions(self):
+        doc = {"type": "doc", "content": [
+            {"type": "extension", "attrs": {"extensionType": "com.atlassian.confluence.macro.core", "extensionKey": "toc", "text": "Table of contents"}},
+            {"type": "bodiedExtension", "attrs": {"extensionKey": "details"}, "content": [para(text("inside"))]},
+            para(text("see "), {"type": "inlineExtension", "attrs": {"extensionKey": "jira-chart"}})]}
+        self.assertEqual(adf.to_text(doc), "[Table of contents]\n[details]\ninside\nsee [jira-chart]")
+
     def test_expand_title(self):
         doc = {"type": "doc", "content": [{"type": "expand", "attrs": {"title": "Details"}, "content": [para(text("hidden text"))]}]}
         self.assertEqual(adf.to_text(doc), "Details\nhidden text")

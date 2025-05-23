@@ -44,11 +44,25 @@ def _block(node, depth):
             return [_inline(children)]
         case "expand" | "nestedExpand":
             return ([attrs["title"]] if attrs.get("title") else []) + _blocks(children, depth)
+        case "taskList":
+            return [_task(child) if child.get("type") == "taskItem" else line
+                    for child in children for line in ([""] if child.get("type") == "taskItem" else _block(child, depth))]
+        case "decisionList":
+            return ["Decision{}: {}".format(" (open)" if (c.get("attrs") or {}).get("state") == "UNDECIDED" else "", _inline(c.get("content") or []))
+                    for c in children]
+        case "extension" | "bodiedExtension":
+            label = attrs.get("text") or attrs.get("extensionKey", "extension")
+            return ["[{}]".format(label)] + (_blocks(children, depth) if kind == "bodiedExtension" else [])
         case "text":
             return [_inline([node])]
         case _:
             # Containers and anything unknown: keep whatever text they hold.
             return _blocks(children, depth) if children else []
+
+
+def _task(item):
+    done = (item.get("attrs") or {}).get("state") == "DONE"
+    return "[{}] {}".format("x" if done else " ", _inline(item.get("content") or []))
 
 
 def _list(kind, items, number, depth):
@@ -85,8 +99,10 @@ def _inline(nodes):
                 parts.append("[{}]".format(attrs.get("text", "")))
             case "date":
                 parts.append(_date(attrs.get("timestamp")))
-            case "media":
+            case "media" | "mediaInline":
                 parts.append("[media: {}]".format(attrs.get("alt") or attrs.get("id", "")))
+            case "inlineExtension":
+                parts.append("[{}]".format(attrs.get("text") or attrs.get("extensionKey", "extension")))
             case _:
                 if node.get("content"):
                     parts.append(_inline(node["content"]))
