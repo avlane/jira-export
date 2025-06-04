@@ -43,6 +43,13 @@ class CliTests(unittest.TestCase):
         self.assertEqual([r["key"] for r in data], ["PLAT-101", "PLAT-102", "PLAT-103"])
         self.assertEqual(data[0]["labels"], "auth, p1")
 
+    def test_json_keeps_numbers_as_numbers(self):
+        session = FakeSession().add("GET", r"/rest/api/3/field$", load("fields.json"))
+        session.add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        code, text, _ = run(["--jql", "project = PLAT", "-f", "jsonl", "-F", "Story point estimate=points"], session)
+        points = [json.loads(line)["points"] for line in text.splitlines()]
+        self.assertEqual(points, [5, 3, None])
+
     def test_custom_field_columns(self):
         session = FakeSession().add("GET", r"/rest/api/3/field$", load("fields.json"))
         session.add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))

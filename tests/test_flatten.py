@@ -1,6 +1,7 @@
 import unittest
 
 from jiraexport import flatten
+from jiraexport.fieldmap import Field
 from tests.helpers import load
 
 
@@ -71,6 +72,19 @@ class FlattenTests(unittest.TestCase):
         self.assertEqual(render(True), "true")
         self.assertEqual(render({"self": "x", "value": "High", "id": "10"}), "High")
         self.assertEqual(render({"name": "2.15", "id": "5"}), "2.15")
+
+    def test_typed_values_for_json(self):
+        issue = load("issues.json")[0]
+        issue["fields"]["customfield_10031"] = [{"value": "prod"}, {"value": "staging"}]
+        issue["fields"]["customfield_10033"] = {"displayName": "Carol Nguyen", "accountId": "x"}
+        issue["fields"]["customfield_10034"] = True
+        custom = [Field("customfield_10016", "points"), Field("customfield_10031", "envs"), Field("customfield_10033", "reviewer"),
+                  Field("customfield_10034", "flag"), Field("customfield_10035", "nothing")]
+        typed = flatten.flatten(issue, custom, typed=True)
+        self.assertEqual((typed["points"], typed["envs"], typed["reviewer"], typed["flag"], typed["nothing"]),
+                         (5, ["prod", "staging"], "Carol Nguyen", True, None))
+        plain = flatten.flatten(issue, custom)
+        self.assertEqual((plain["points"], plain["envs"], plain["flag"], plain["nothing"]), ("5", "prod, staging", "true", ""))
 
     def test_render_lists_users_cascades_and_rich_text(self):
         render = flatten.render_value

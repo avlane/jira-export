@@ -28,7 +28,7 @@ def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fie
             continue
         if limit is not None and main_sink.count >= limit:
             break
-        row = flatten(issue, custom, html)
+        row = flatten(issue, custom, html, typed=nested)
         if only:
             row = {name: row[name] for name in only}
         for extra in extras:

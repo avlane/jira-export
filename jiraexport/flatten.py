@@ -47,13 +47,22 @@ def columns(custom=(), html=False):
     return COLUMNS + tuple(f.column for f in custom) + (("description_html",) if html else ())
 
 
-def flatten(issue, custom=(), html=False):
+def typed_value(value):
+    """Keep numbers, booleans and null as they are for JSON; lists become lists of text; the rest is rendered."""
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    if isinstance(value, list):
+        return [typed_value(v) for v in value]
+    return render_value(value)
+
+
+def flatten(issue, custom=(), html=False, typed=False):
     f = issue["fields"]
     row = _core(f, issue["key"])
     if html:  # needs expand=renderedFields
         row["description_html"] = (issue.get("renderedFields") or {}).get("description") or ""
     for field in custom:
-        row[field.column] = render_value(f.get(field.id))
+        row[field.column] = typed_value(f.get(field.id)) if typed else render_value(f.get(field.id))
     return row
 
 
