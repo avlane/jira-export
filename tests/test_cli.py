@@ -50,6 +50,15 @@ class CliTests(unittest.TestCase):
         points = [json.loads(line)["points"] for line in text.splitlines()]
         self.assertEqual(points, [5, 3, None])
 
+    def test_list_fields(self):
+        session = FakeSession().add("GET", r"/rest/api/3/field$", load("fields.json"))
+        code, text, _ = run(["--list-fields"], session)
+        lines = text.splitlines()
+        self.assertEqual(code, 0)
+        self.assertEqual(lines[0], "summary\tSummary\tstring")
+        self.assertIn("customfield_10016\tStory point estimate\tjsw-story-points", lines)
+        self.assertEqual(len(lines), 7)
+
     def test_custom_field_columns(self):
         session = FakeSession().add("GET", r"/rest/api/3/field$", load("fields.json"))
         session.add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))

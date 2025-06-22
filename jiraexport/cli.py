@@ -16,6 +16,7 @@ from .flatten import columns as flat_columns
 def build_parser():
     parser = argparse.ArgumentParser(prog="jira-export", description="Export Jira Cloud issues selected by JQL.")
     parser.add_argument("--jql", help="JQL query selecting the issues")
+    parser.add_argument("--list-fields", action="store_true", help="print the fields on this site (id, name, type) and exit")
     parser.add_argument("--project", "-p", action="append", default=[], metavar="KEY", help="only this project (repeatable)")
     parser.add_argument("--status", action="append", default=[], metavar="NAME", help="only this status (repeatable)")
     parser.add_argument("--updated-since", metavar="DATE", help="only issues updated on or after 2024-03-01 [HH:MM]")
@@ -115,9 +116,25 @@ def setup_logging(verbosity):
     logging.basicConfig(level=level, format="%(levelname)s %(message)s", stream=sys.stderr)
 
 
+def list_fields(client, out):
+    try:
+        client = client or make_client()
+        available = client.get("field")
+    except (config.ConfigError, JiraError) as exc:
+        print("error: {}".format(exc), file=sys.stderr)
+        return 2
+    out = out if out is not None else sys.stdout
+    for field in sorted(available, key=lambda f: (f.get("custom", False), f["name"].casefold())):
+        kind = (field.get("schema") or {}).get("custom", "").rpartition(":")[2] or (field.get("schema") or {}).get("type", "")
+        out.write("{}\t{}\t{}\n".format(field["id"], field["name"], kind))
+    return 0
+
+
 def main(argv=None, client=None, out=None):
     args = build_parser().parse_args(argv)
     setup_logging(args.verbose)
+    if args.list_fields:
+        return list_fields(client, out)
     if args.classic_search:
         print("warning: --classic-search will stop working when Atlassian retires the classic search resource; "
               "drop the flag to use search/jql", file=sys.stderr)
