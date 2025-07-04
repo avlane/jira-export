@@ -27,6 +27,24 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(session.calls[0]["url"], "https://example.atlassian.net/rest/api/3/attachment/content/1")
 
 
+class UserAgentTests(unittest.TestCase):
+    def test_user_agent_carries_the_version(self):
+        import sys
+        import types
+        from unittest import mock
+        from jiraexport import __version__, client as client_module
+
+        class Session:
+            def __init__(self):
+                self.headers = {}
+                self.auth = None
+
+        with mock.patch.dict(sys.modules, {"requests": types.SimpleNamespace(Session=Session)}):
+            session = client_module.default_session("ops@example.com", "tok")
+        self.assertEqual(session.headers["User-Agent"], "jira-export/" + __version__)
+        self.assertEqual(session.auth, ("ops@example.com", "tok"))
+
+
 class TransientErrorTests(unittest.TestCase):
     def test_gets_are_retried_with_backoff(self):
         session = FakeSession().add("GET", r"/myself$", Seq(FakeResponse(503), FakeResponse(504), {"ok": True}))

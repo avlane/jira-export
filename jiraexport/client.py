@@ -3,6 +3,8 @@ import logging
 import os
 import time
 
+from . import __version__
+
 
 class JiraError(Exception):
     def __init__(self, message, status=None, url=None):
@@ -19,7 +21,7 @@ def default_session(email, token):
 
     session = requests.Session()
     session.auth = (email, token)
-    session.headers.update({"Accept": "application/json", "User-Agent": "jira-export/0.1"})
+    session.headers.update({"Accept": "application/json", "User-Agent": "jira-export/" + __version__})
     return session
 
 

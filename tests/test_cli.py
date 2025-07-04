@@ -50,6 +50,14 @@ class CliTests(unittest.TestCase):
         points = [json.loads(line)["points"] for line in text.splitlines()]
         self.assertEqual(points, [5, 3, None])
 
+    def test_version(self):
+        from jiraexport import __version__
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as ctx:
+            cli.build_parser().parse_args(["--version"])
+        self.assertEqual(ctx.exception.code, 0)
+        self.assertEqual(out.getvalue().strip(), "jira-export " + __version__)
+
     def test_list_fields(self):
         session = FakeSession().add("GET", r"/rest/api/3/field$", load("fields.json"))
         code, text, _ = run(["--list-fields"], session)

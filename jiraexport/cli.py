@@ -8,6 +8,7 @@ import sys
 
 from . import (attachments, changelog, comments, config, exporter, fieldmap, incremental, issues, jqlbuild, links, manifest,
                worklogs, writers)
+from . import __version__
 from .client import JiraClient, JiraError
 from .exporter import Extra
 from .flatten import columns as flat_columns
@@ -15,6 +16,7 @@ from .flatten import columns as flat_columns
 
 def build_parser():
     parser = argparse.ArgumentParser(prog="jira-export", description="Export Jira Cloud issues selected by JQL.")
+    parser.add_argument("--version", action="version", version="jira-export " + __version__)
     parser.add_argument("--jql", help="JQL query selecting the issues")
     parser.add_argument("--list-fields", action="store_true", help="print the fields on this site (id, name, type) and exit")
     parser.add_argument("--project", "-p", action="append", default=[], metavar="KEY", help="only this project (repeatable)")
