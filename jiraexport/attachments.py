@@ -20,7 +20,7 @@ def _hash_file(path):
     return digest.hexdigest()
 
 
-def safe_filename(name):
+def safe_filename(name: str) -> str:
     """A name that cannot escape the target folder: no directories, no control characters."""
     name = name.replace("\\", "/").rsplit("/", 1)[-1]
     name = "".join(ch if ch.isprintable() else "_" for ch in name).strip(" .")

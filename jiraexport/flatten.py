@@ -20,7 +20,7 @@ def _names(items):
     return ", ".join(i.get("name", "") for i in items or [])
 
 
-def render_value(value):
+def render_value(value: object) -> str:
     """Text for one field value: strings and numbers as they are, option objects by their label."""
     if value is None:
         return ""
@@ -43,7 +43,7 @@ def render_value(value):
     return json.dumps(value, sort_keys=True)
 
 
-def columns(custom=(), html=False):
+def columns(custom: tuple = (), html: bool = False) -> tuple[str, ...]:
     return COLUMNS + tuple(f.column for f in custom) + (("description_html",) if html else ())
 
 
@@ -94,6 +94,6 @@ def _core(f, key):
 _OFFSET = re.compile(r"([+-]\d{2})(\d{2})$")
 
 
-def normalise_timestamp(value):
+def normalise_timestamp(value: str | None) -> str:
     """Jira writes offsets as +0000; ISO 8601 (and pandas, and Excel's importers) want +00:00."""
     return _OFFSET.sub(r"\1:\2", value) if value else ""

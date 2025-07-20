@@ -10,11 +10,12 @@ class JqlError(ValueError):
     pass
 
 
-def quote(value):
+def quote(value: str) -> str:
     return '"{}"'.format(value.replace("\\", "\\\\").replace('"', '\\"'))
 
 
-def build(jql=None, projects=(), statuses=(), updated_since=None):
+def build(jql: str | None = None, projects: tuple | list = (), statuses: tuple | list = (),
+          updated_since: str | None = None) -> str:
     """AND together an optional raw query and the convenience filters; ORDER BY stays last."""
     where, order = split_order_by(jql) if jql else ("", "")
     parts = ["({})".format(where)] if where else []

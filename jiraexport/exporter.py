@@ -1,7 +1,7 @@
 """Run an export: search, flatten, collect extras, hand rows to the sinks."""
-from collections import namedtuple
-
 import logging
+from collections import namedtuple
+from collections.abc import Callable, Iterable
 
 from . import issues
 from .flatten import flatten
@@ -13,7 +13,10 @@ PROGRESS_EVERY = 100
 Extra = namedtuple("Extra", "name fields columns collect expand", defaults=((),))
 
 
-def export(client, jql, main_sink, extras=(), side_sinks=None, nested=False, fields=issues.DEFAULT_FIELDS, observe=None, skip=None, custom=(), html=False, limit=None, only=None, search=issues.search, estimate=None):
+def export(client, jql: str, main_sink, extras: Iterable = (), side_sinks: dict | None = None, nested: bool = False,
+           fields: tuple[str, ...] = issues.DEFAULT_FIELDS, observe: Callable | None = None, skip: Callable | None = None,
+           custom: tuple = (), html: bool = False, limit: int | None = None, only: tuple[str, ...] | None = None,
+           search: Callable = issues.search, estimate: int | None = None) -> int:
     """Write every matching issue to main_sink; return how many were written.
 
     With nested=True each extra's rows are stored inside the issue row (JSON

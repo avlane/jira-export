@@ -15,7 +15,7 @@ class StateError(Exception):
     pass
 
 
-def load(path):
+def load(path: str) -> dict | None:
     """The saved state, or None when the file does not exist yet."""
     try:
         with open(path, encoding="utf-8") as handle:
@@ -44,7 +44,7 @@ def parse(stamp):
 _ORDER_BY = re.compile(r"\border\s+by\b", re.IGNORECASE)
 
 
-def split_order_by(jql):
+def split_order_by(jql: str) -> tuple[str, str]:
     """Split a query into (conditions, order clause), ignoring ORDER BY inside quoted strings."""
     quote = None
     for index, char in enumerate(jql):
@@ -60,12 +60,12 @@ def split_order_by(jql):
     return jql.strip(), ""
 
 
-def user_timezone(client):
+def user_timezone(client) -> str | None:
     """The API user's time zone name, or None. JQL date literals are read in this zone."""
     return client.get("myself").get("timeZone")
 
 
-def jql_since(jql, since, tz=None):
+def jql_since(jql: str, since: str, tz: str | None = None) -> str:
     """Narrow a query to issues updated at or after `since` (JQL only has minute precision).
 
     JQL reads "2025-03-01 09:30" in the *user's* time zone, so `since` is

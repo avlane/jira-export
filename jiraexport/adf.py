@@ -2,7 +2,7 @@
 import datetime
 
 
-def to_text(node):
+def to_text(node: dict | str | None) -> str:
     """Plain text for an ADF document. Strings pass through; None becomes an empty string."""
     if not node:
         return ""
@@ -119,7 +119,7 @@ def _text_with_marks(node):
     return value
 
 
-def _date(timestamp):
+def _date(timestamp: object) -> str:
     try:
         moment = datetime.datetime.fromtimestamp(int(timestamp) / 1000, tz=datetime.timezone.utc)
     except (TypeError, ValueError):
