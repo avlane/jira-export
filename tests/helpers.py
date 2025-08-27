@@ -109,37 +109,8 @@ def paged(items, key=None, cap=None, total=True, last_flag=True):
     return handler
 
 
-def search_handler(issues, cap=100, names=None):
-    """Behave like the search resource: honour startAt and maxResults (capped) and report total."""
-    def handler(call):
-        q = call["json"] if call["json"] is not None else call["params"]
-        start = int(q.get("startAt", 0))
-        size = min(int(q.get("maxResults", 50)), cap)
-        body = {"expand": "names,schema", "startAt": start, "maxResults": size, "total": len(issues),
-                "issues": issues[start:start + size]}
-        if names:
-            body["names"] = names
-        return body
-    return handler
-
-
-def since_handler(issues):
-    """Search stand-in that honours an `updated >= "YYYY-MM-DD HH:mm"` clause (compares the wall-clock part)."""
-    import re
-
-    def handler(call):
-        jql = call["params"]["jql"]
-        found = re.search(r'updated >= "(\d{4}-\d{2}-\d{2} \d{2}:\d{2})"', jql)
-        picked = issues
-        if found:
-            stamp = found.group(1)
-            picked = [i for i in issues if i["fields"]["updated"][:16].replace("T", " ") >= stamp]
-        return search_handler(picked)(call)
-    return handler
-
-
-def enhanced_handler(issues, cap=100):
-    """Behave like search/jql: opaque nextPageToken, no total, isLast on the final page."""
+def search_handler(issues, cap=100):
+    """Behave like the search resource, search/jql: opaque nextPageToken, no total, isLast on the final page."""
     def handler(call):
         body = call["json"]
         start = int(body["nextPageToken"]) if body.get("nextPageToken") else 0
@@ -154,8 +125,8 @@ def enhanced_handler(issues, cap=100):
     return handler
 
 
-def enhanced_since_handler(issues):
-    """enhanced_handler that first applies an `updated >= "YYYY-MM-DD HH:mm"` clause from the query."""
+def since_handler(issues):
+    """search_handler that first applies an `updated >= "YYYY-MM-DD HH:mm"` clause from the query."""
     import re
 
     def handler(call):
@@ -164,7 +135,7 @@ def enhanced_since_handler(issues):
         if found:
             stamp = found.group(1)
             picked = [i for i in issues if i["fields"]["updated"][:16].replace("T", " ") >= stamp]
-        return enhanced_handler(picked)(call)
+        return search_handler(picked)(call)
     return handler
 
 

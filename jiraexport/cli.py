@@ -30,9 +30,7 @@ def build_parser():
     parser.add_argument("--raw-csv", action="store_true", help="do not defuse cells that start with = + @ or -")
     parser.add_argument("--bulk-fetch", action="store_true",
                         help="search for ids first, then fetch issues in batches of 100 (helps with very large fields)")
-    parser.add_argument("--classic-search", action="store_true",
-                        help="use the classic search endpoint, which Atlassian is retiring, instead of search/jql")
-    parser.add_argument("--enhanced-search", action="store_true", help="accepted for compatibility; this is now the default")
+    parser.add_argument("--enhanced-search", action="store_true", help="accepted for compatibility; search/jql is the only search now")
     parser.add_argument("--limit", type=int, metavar="N", help="stop after N issues")
     parser.add_argument("--columns", metavar="A,B,C", help="only these columns of the main file, in this order")
     parser.add_argument("--html", action="store_true", help="add a description_html column with Jira's rendered HTML")
@@ -106,11 +104,9 @@ def open_for_output(stack, path, appending, bom=False):
 
 
 def choose_search(args, failures):
-    if args.classic_search:
-        return issues.search
     if args.bulk_fetch:
         return functools.partial(issues.search_hydrated, failures=failures)
-    return issues.search_enhanced
+    return issues.search
 
 
 def setup_logging(verbosity):
@@ -137,9 +133,6 @@ def main(argv=None, client=None, out=None):
     setup_logging(args.verbose)
     if args.list_fields:
         return list_fields(client, out)
-    if args.classic_search:
-        print("warning: --classic-search will stop working when Atlassian retires the classic search resource; "
-              "drop the flag to use search/jql", file=sys.stderr)
     try:
         args.jql = jqlbuild.build(args.jql, args.project, args.status, args.updated_since)
     except jqlbuild.JqlError as exc:
@@ -192,7 +185,7 @@ def main(argv=None, client=None, out=None):
                     side_sinks[extra.name] = writers.open_sink("csv", handle, extra.columns, side_header, not args.raw_csv)
             seen, failures = [], []
             estimate = None
-            if args.verbose and not args.classic_search:  # an extra request, so only when someone is watching
+            if args.verbose:  # an extra request, so only when someone is watching
                 try:
                     estimate = issues.approximate_count(client, jql)
                 except JiraError as exc:

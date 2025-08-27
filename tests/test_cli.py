@@ -8,11 +8,11 @@ import unittest
 
 from jiraexport import cli
 from jiraexport.client import JiraClient
-from tests.helpers import FakeResponse, FakeSession, enhanced_handler, enhanced_since_handler, load
+from tests.helpers import FakeResponse, FakeSession, load, search_handler, since_handler
 
 
 def run(argv, session=None):
-    session = session or FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+    session = session or FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json")))
     out, err = io.StringIO(), io.StringIO()
     with contextlib.redirect_stderr(err):
         code = cli.main(argv, client=JiraClient("https://example.atlassian.net", session=session), out=out)
@@ -45,7 +45,7 @@ class CliTests(unittest.TestCase):
 
     def test_json_keeps_numbers_as_numbers(self):
         session = FakeSession().add("GET", r"/rest/api/3/field$", load("fields.json"))
-        session.add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        session.add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json")))
         code, text, _ = run(["--jql", "project = PLAT", "-f", "jsonl", "-F", "Story point estimate=points"], session)
         points = [json.loads(line)["points"] for line in text.splitlines()]
         self.assertEqual(points, [5, 3, None])
@@ -69,7 +69,7 @@ class CliTests(unittest.TestCase):
 
     def test_custom_field_columns(self):
         session = FakeSession().add("GET", r"/rest/api/3/field$", load("fields.json"))
-        session.add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        session.add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json")))
         code, text, _ = run(["--jql", "project = PLAT", "-F", "Story point estimate=points", "-F", "customfield_10030"], session)
         rows = list(csv.DictReader(io.StringIO(text)))
         self.assertEqual(code, 0)
@@ -132,71 +132,28 @@ class CliTests(unittest.TestCase):
         import json
         issues = json.loads(json.dumps(load("issues.json")))
         issues[0]["fields"]["summary"] = "=cmd|' /C calc'!A0"
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(issues))
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(issues))
         code, text, _ = run(["--jql", "project = PLAT"], session)
         self.assertEqual(list(csv.DictReader(io.StringIO(text)))[0]["summary"], "'=cmd|' /C calc'!A0")
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(issues))
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(issues))
         code, text, _ = run(["--jql", "project = PLAT", "--raw-csv"], session)
         self.assertEqual(list(csv.DictReader(io.StringIO(text)))[0]["summary"], "=cmd|' /C calc'!A0")
 
-    def test_classic_search_is_still_available(self):
-        from tests.helpers import search_handler
-        session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
-        code, text, _ = run(["--jql", "project = PLAT", "--classic-search"], session)
-        self.assertEqual(code, 0)
-        self.assertEqual(len(list(csv.DictReader(io.StringIO(text)))), 3)
-        self.assertEqual(session.calls[0]["method"], "GET")
-
-    def test_classic_search_warns(self):
-        from tests.helpers import search_handler
-        session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
-        code, _, err = run(["--jql", "project = PLAT", "--classic-search"], session)
-        self.assertIn("will stop working", err)
-        code, _, err = run(["--jql", "project = PLAT"])
-        self.assertNotIn("stop working", err)
-
-    def test_verbose_runs_ask_for_an_estimate(self):
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
-        session.add("POST", r"/search/approximate-count$", {"count": 3})
-        code, _, _ = run(["--jql", "project = PLAT", "-v"], session)
-        self.assertEqual(len(session.calls_to("POST", "/search/approximate-count")), 1)
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
-        code, _, _ = run(["--jql", "project = PLAT"], session)
-        self.assertEqual(session.calls_to("POST", "/search/approximate-count"), [])
-
-    def test_bulk_fetch_mode(self):
-        from tests.helpers import bulkfetch_handler
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
-        session.add("POST", r"/rest/api/3/issue/bulkfetch$", bulkfetch_handler(load("issues.json")))
-        code, text, _ = run(["--jql", "project = PLAT", "--bulk-fetch", "--changelog", "--format", "jsonl"], session)
-        self.assertEqual(code, 0)
-        self.assertEqual([json.loads(l)["key"] for l in text.splitlines()], ["PLAT-101", "PLAT-102", "PLAT-103"])
-        self.assertEqual(session.calls_to("POST", "/issue/bulkfetch")[0]["json"]["expand"], ["changelog"])
-
-    def test_unreadable_issues_give_exit_code_1(self):
-        from tests.helpers import bulkfetch_handler
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
-        session.add("POST", r"/rest/api/3/issue/bulkfetch$", bulkfetch_handler(load("issues.json"), failing=("10103",)))
-        code, text, err = run(["--jql", "project = PLAT", "--bulk-fetch"], session)
-        self.assertEqual(code, 1)
-        self.assertEqual(len(list(csv.DictReader(io.StringIO(text)))), 2)
-        self.assertIn("1 issue(s) could not be fetched: 10103", err)
-
     def test_search_jql_is_the_default(self):
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json")))
         code, _, _ = run(["--jql", "project = PLAT"], session)
         self.assertEqual(code, 0)
         self.assertEqual(session.calls[0]["json"]["jql"], "project = PLAT")
 
     def test_enhanced_search(self):
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json"), cap=2))
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json"), cap=2))
         code, text, _ = run(["--jql", "project = PLAT", "--enhanced-search"], session)
         self.assertEqual([r["key"] for r in csv.DictReader(io.StringIO(text))], ["PLAT-101", "PLAT-102", "PLAT-103"])
         self.assertEqual(len(session.calls), 2)
 
     def test_enhanced_search_with_incremental_and_extras(self):
         import json
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json")))
         code, text, _ = run(["--jql", "project = PLAT", "--enhanced-search", "--format", "jsonl", "--changelog", "--limit", "1"], session)
         record = json.loads(text.splitlines()[0])
         self.assertEqual(len(record["changelog"]), 4)
@@ -223,7 +180,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(list(first), ["key", "status", "comments"])
 
     def test_html_column(self):
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json")))
         code, text, _ = run(["--jql", "project = PLAT", "--html"], session)
         rows = list(csv.DictReader(io.StringIO(text)))
         self.assertTrue(rows[0]["description_html"].startswith("<h2>Summary</h2>"))
@@ -243,7 +200,7 @@ class CliTests(unittest.TestCase):
     def test_changelog_sidecar(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "issues.csv")
-            session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+            session = FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json")))
             code, _, _ = run(["--jql", "project = PLAT", "-o", path, "--changelog"], session)
             with open(os.path.join(tmp, "issues-changelog.csv"), newline="", encoding="utf-8") as handle:
                 rows = list(csv.DictReader(handle))
@@ -288,14 +245,14 @@ class CliTests(unittest.TestCase):
         newer["fields"]["updated"] = "2021-02-13T09:00:00.000+0000"
         with tempfile.TemporaryDirectory() as tmp:
             path, state = os.path.join(tmp, "issues.csv"), os.path.join(tmp, "state.json")
-            first = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_since_handler(everything))
+            first = FakeSession().add("POST", r"/rest/api/3/search/jql$", since_handler(everything))
             code, _, _ = run(["--jql", "project = PLAT", "-o", path, "--incremental", state], first)
             self.assertEqual(code, 0)
             with open(state, encoding="utf-8") as handle:
                 saved = json.load(handle)
             self.assertEqual(saved["last_updated"], "2021-02-12T08:30:00.000+00:00")
             self.assertEqual(first.calls[0]["json"]["jql"], "project = PLAT")
-            second = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_since_handler(everything + [newer]))
+            second = FakeSession().add("POST", r"/rest/api/3/search/jql$", since_handler(everything + [newer]))
             second.add("GET", r"/myself$", {"accountId": "x", "timeZone": "UTC"})
             code, _, err = run(["--jql", "project = PLAT", "-o", path, "--incremental", state], second)
             self.assertEqual(second.calls_to("POST", "/search/jql")[0]["json"]["jql"], '(project = PLAT) AND updated >= "2021-02-12 08:30"')
@@ -313,8 +270,8 @@ class CliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path, state = os.path.join(tmp, "issues.csv"), os.path.join(tmp, "state.json")
             run(["--jql", "project = PLAT", "-o", path, "--incremental", state],
-                FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_since_handler(everything)))
-            second = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_since_handler(everything))
+                FakeSession().add("POST", r"/rest/api/3/search/jql$", since_handler(everything)))
+            second = FakeSession().add("POST", r"/rest/api/3/search/jql$", since_handler(everything))
             second.add("GET", r"/myself$", {"accountId": "x", "timeZone": "America/New_York"})
             run(["--jql", "project = PLAT", "-o", path, "--incremental", state], second)
         # 2021-02-12 08:30 UTC is 03:30 in New York (EST)
@@ -325,12 +282,12 @@ class CliTests(unittest.TestCase):
         everything = load("issues.json")
         with tempfile.TemporaryDirectory() as tmp:
             path, state = os.path.join(tmp, "issues.jsonl"), os.path.join(tmp, "state.json")
-            first = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_since_handler(everything[:2]))
+            first = FakeSession().add("POST", r"/rest/api/3/search/jql$", since_handler(everything[:2]))
             run(["--jql", "project = PLAT", "-o", path, "-f", "jsonl", "--incremental", state], first)
             with open(path, "rb+") as handle:  # simulate a run that died before the newline
                 handle.seek(-1, os.SEEK_END)
                 handle.truncate()
-            second = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_since_handler(everything))
+            second = FakeSession().add("POST", r"/rest/api/3/search/jql$", since_handler(everything))
             second.add("GET", r"/myself$", {"accountId": "x", "timeZone": "UTC"})
             run(["--jql", "project = PLAT", "-o", path, "-f", "jsonl", "--incremental", state], second)
             with open(path, encoding="utf-8") as handle:
@@ -345,7 +302,7 @@ class CliTests(unittest.TestCase):
         self.assertIn("JSON Lines", err)
 
     def test_attachments_metadata_and_download(self):
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json")))
         session.add("GET", r"/attachment/content/\d+$", FakeResponse(200, "file body"))
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "issues.csv")
@@ -375,7 +332,7 @@ class CliTests(unittest.TestCase):
         self.assertIn("--jql", err)
 
     def test_filters_build_the_query(self):
-        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", enhanced_handler(load("issues.json")))
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json")))
         code, _, _ = run(["-p", "PLAT", "--status", "To Do", "--updated-since", "2024-03-01"], session)
         self.assertEqual(session.calls[0]["json"]["jql"], 'project in ("PLAT") AND status in ("To Do") AND updated >= "2024-03-01"')
 

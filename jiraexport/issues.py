@@ -1,4 +1,4 @@
-"""Fetching issues by JQL."""
+"""Fetching issues by JQL, through the enhanced search (search/jql)."""
 import json
 import logging
 
@@ -7,38 +7,8 @@ log = logging.getLogger("jiraexport")
 DEFAULT_FIELDS = ("summary", "issuetype", "status", "priority", "assignee", "reporter", "created", "updated",
                   "resolution", "labels", "components", "fixVersions", "project", "description", "parent", "subtasks", "timeoriginalestimate", "timeestimate", "timespent")
 
-# GET puts the JQL in the URL; past roughly this length proxies and Jira start answering 414 or 400.
-MAX_GET_JQL = 1500
-
-
-def search(client, jql, fields=DEFAULT_FIELDS, expand=(), page_size=100):
-    """Yield every issue matching the JQL, paging with startAt until total is reached.
-
-    Long queries (for example an `issue in (...)` list) are sent as a POST body.
-    """
-    start = 0
-    use_post = len(jql) > MAX_GET_JQL
-    while True:
-        if use_post:
-            body = {"jql": jql, "startAt": start, "maxResults": page_size, "fields": list(fields)}
-            if expand:
-                body["expand"] = list(expand)
-            data = client.request("POST", "search", body=body)
-        else:
-            params = {"jql": jql, "startAt": start, "maxResults": page_size, "fields": ",".join(fields)}
-            if expand:
-                params["expand"] = ",".join(expand)
-            data = client.get("search", params)
-        batch = data["issues"]
-        for issue in batch:
-            yield issue
-        start += len(batch)
-        if not batch or start >= data["total"]:
-            return
-
-
-def search_enhanced(client, jql, fields=DEFAULT_FIELDS, expand=(), page_size=100):
-    """Yield issues through the enhanced search (search/jql).
+def search(client, jql: str, fields=DEFAULT_FIELDS, expand=(), page_size=100):
+    """Yield every issue matching the JQL.
 
     It pages with an opaque nextPageToken and returns no total. The request is
     always a POST, so long queries need no special case. In this endpoint
@@ -97,7 +67,7 @@ def search_hydrated(client, jql, fields=DEFAULT_FIELDS, expand=(), page_size=100
         by_id = {issue["id"]: issue for issue in found}
         return [by_id[i["id"]] for i in batch if i["id"] in by_id]
 
-    for stub in search_enhanced(client, jql, fields=("id",), page_size=page_size):
+    for stub in search(client, jql, fields=("id",), page_size=page_size):
         batch.append(stub)
         if len(batch) == BULK_LIMIT:
             yield from flush()

@@ -2,13 +2,13 @@ import unittest
 
 from jiraexport import issues
 from jiraexport.client import JiraClient
-from tests.helpers import FakeSession, bulkfetch_handler, enhanced_handler, load
+from tests.helpers import FakeSession, bulkfetch_handler, search_handler, load
 
 
 def make(failing=(), source=None):
     source = source if source is not None else load("issues.json")
     session = FakeSession()
-    session.add("POST", r"/rest/api/3/search/jql$", enhanced_handler(source))
+    session.add("POST", r"/rest/api/3/search/jql$", search_handler(source))
     session.add("POST", r"/rest/api/3/issue/bulkfetch$", bulkfetch_handler(source, failing))
     return JiraClient("https://example.atlassian.net", session=session), session
 

@@ -8,7 +8,7 @@ from tests.helpers import FakeSession, load, search_handler
 
 class ProgressLoggingTests(unittest.TestCase):
     def test_progress_is_logged_every_n_issues(self):
-        session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json")))
         client = JiraClient("https://example.atlassian.net", session=session)
         sink = writers.open_sink("jsonl", io.StringIO(), ())
         old = exporter.PROGRESS_EVERY
@@ -22,7 +22,7 @@ class ProgressLoggingTests(unittest.TestCase):
 
 class EstimateTests(unittest.TestCase):
     def test_estimate_appears_in_progress_messages(self):
-        session = FakeSession().add("GET", r"/rest/api/3/search$", search_handler(load("issues.json")))
+        session = FakeSession().add("POST", r"/rest/api/3/search/jql$", search_handler(load("issues.json")))
         client = JiraClient("https://example.atlassian.net", session=session)
         sink = writers.open_sink("jsonl", io.StringIO(), ())
         old = exporter.PROGRESS_EVERY

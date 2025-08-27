@@ -26,7 +26,6 @@ Options:
 | `--raw-csv` | do not put a quote in front of CSV cells that start with `=`, `+`, `@` or `-` (they are defused by default) |
 | `--excel` | start CSV files with a UTF-8 byte order mark so Excel shows accents correctly |
 | `--bulk-fetch` | search for ids, then fetch the issues 100 at a time (useful with `--changelog` on big exports) |
-| `--classic-search` | use the classic search endpoint instead of `search/jql` (Atlassian is retiring it) |
 | `--list-fields` | print the site's fields (id, name, type) and exit; handy for `-F` |
 | `--limit N` | stop after N issues |
 | `--columns A,B,C` | only these columns of the main file, in this order |
