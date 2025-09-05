@@ -40,6 +40,16 @@ Options:
 | `--download-workers N` | fetch an issue's attachments with N threads |
 | `--max-attachment-mb N` | skip downloading anything larger |
 
+## About the search endpoint
+
+Searches go through `search/jql`, the enhanced search that replaces the classic search resource.
+It pages with an opaque `nextPageToken` instead of `startAt`, never reports a total, and takes
+`expand` as one comma-separated string. Because there is no total, `-v` asks the approximate-count
+endpoint for an estimate so progress messages can say "N of about M". `--bulk-fetch` searches for ids
+only and then reads the issues 100 at a time with `issue/bulkfetch`; anything that endpoint refuses is
+logged, skipped and reported at the end with exit code 1. `--enhanced-search` is still accepted and
+does nothing.
+
 ## Output
 
 With `--format csv` the main file has one row per issue. Comments, worklogs, the change history,
