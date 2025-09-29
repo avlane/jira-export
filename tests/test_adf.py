@@ -77,6 +77,22 @@ class AdfTests(unittest.TestCase):
         doc = {"type": "doc", "content": [{"type": "mediaSingle", "content": [{"type": "media", "attrs": {"id": "abc", "type": "file", "alt": "spinner.png"}}]}]}
         self.assertEqual(adf.to_text(doc), "[media: spinner.png]")
 
+    def test_malformed_documents_do_not_raise(self):
+        broken = {"type": "doc", "content": [
+            None, "stray string", 42,
+            {"type": "paragraph", "content": "not a list"},
+            {"type": "paragraph", "content": [{"type": "text", "text": None}, {"type": "text", "text": "ok", "marks": "strong"},
+                                              {"type": "text", "text": " link", "marks": [None, {"type": "link", "attrs": {"href": 7}}]}]},
+            {"type": "orderedList", "attrs": {"order": "abc"}, "content": [{"type": "listItem", "content": [para(text("first"))]}, "junk"]},
+            {"type": "table", "content": [{"type": "tableRow", "content": [None, {"type": "tableCell", "attrs": None}]}]},
+            {"type": "expand", "attrs": {"title": 5}, "content": [para(text("body"))]},
+            {"type": "mention", "attrs": "oops"}]}
+        self.assertEqual(adf.to_text(broken), "ok link\n1. first\n\n5\nbody")
+
+    def test_things_that_are_not_documents(self):
+        for value in (["list"], 42, True, 3.5, {"content": "x"}):
+            self.assertEqual(adf.to_text(value), "")
+
     def test_task_list(self):
         item = lambda state, value: {"type": "taskItem", "attrs": {"localId": "task-1", "state": state}, "content": [text(value)]}
         doc = {"type": "doc", "content": [{"type": "taskList", "attrs": {"localId": "l"}, "content": [item("DONE", "write tests"), item("TODO", "ship it")]}]}

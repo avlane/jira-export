@@ -4,11 +4,29 @@ import datetime
 
 def to_text(node: dict | str | None) -> str:
     """Plain text for an ADF document. Strings pass through; None becomes an empty string."""
-    if not node:
-        return ""
     if isinstance(node, str):
         return node
-    return "\n".join(_blocks(node.get("content") or [], 0)).strip("\n")
+    if not isinstance(node, dict):
+        return ""
+    return "\n".join(_blocks(_content(node), 0)).strip("\n")
+
+
+def _content(node):
+    """Child nodes, skipping anything that is not an object: stored documents are not always well formed."""
+    content = node.get("content") if isinstance(node, dict) else None
+    return [child for child in content if isinstance(child, dict)] if isinstance(content, list) else []
+
+
+def _attrs(node):
+    attrs = node.get("attrs") if isinstance(node, dict) else None
+    return attrs if isinstance(attrs, dict) else {}
+
+
+def _whole(value, default):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def _blocks(nodes, depth):
@@ -20,11 +38,11 @@ def _blocks(nodes, depth):
 
 def _block(node, depth):
     kind = node.get("type")
-    children = node.get("content") or []
-    attrs = node.get("attrs") or {}
+    children = _content(node)
+    attrs = _attrs(node)
     match kind:
         case "bulletList" | "orderedList":
-            return _list(kind, children, int(attrs.get("order", 1)), depth)
+            return _list(kind, children, _whole(attrs.get("order"), 1), depth)
         case "rule":
             return ["---"]
         case "paragraph" | "heading":
@@ -39,16 +57,18 @@ def _block(node, depth):
                 lines[0] = "[{}] {}".format(attrs.get("panelType", "info"), lines[0])
             return lines
         case "table":
-            return [" | ".join(_cell_text(cell) for cell in row.get("content") or []) for row in children]
+            return [" | ".join(_cell_text(cell) for cell in _content(row)) for row in children]
         case "mediaSingle" | "mediaGroup":
             return [_inline(children)]
         case "expand" | "nestedExpand":
-            return ([attrs["title"]] if attrs.get("title") else []) + _blocks(children, depth)
+            return ([str(attrs["title"])] if attrs.get("title") else []) + _blocks(children, depth)
         case "taskList":
-            return [_task(child) if child.get("type") == "taskItem" else line
-                    for child in children for line in ([""] if child.get("type") == "taskItem" else _block(child, depth))]
+            lines = []
+            for child in children:
+                lines.extend([_task(child)] if child.get("type") == "taskItem" else _block(child, depth))
+            return lines
         case "decisionList":
-            return ["Decision{}: {}".format(" (open)" if (c.get("attrs") or {}).get("state") == "UNDECIDED" else "", _inline(c.get("content") or []))
+            return ["Decision{}: {}".format(" (open)" if _attrs(c).get("state") == "UNDECIDED" else "", _inline(_content(c)))
                     for c in children]
         case "extension" | "bodiedExtension":
             label = attrs.get("text") or attrs.get("extensionKey", "extension")
@@ -61,8 +81,8 @@ def _block(node, depth):
 
 
 def _task(item):
-    done = (item.get("attrs") or {}).get("state") == "DONE"
-    return "[{}] {}".format("x" if done else " ", _inline(item.get("content") or []))
+    done = _attrs(item).get("state") == "DONE"
+    return "[{}] {}".format("x" if done else " ", _inline(_content(item)))
 
 
 def _list(kind, items, number, depth):
@@ -70,20 +90,20 @@ def _list(kind, items, number, depth):
     for item in items:
         marker = "- " if kind == "bulletList" else "{}. ".format(number)
         number += 1
-        inner = _blocks(item.get("content") or [], depth + 1)
+        inner = _blocks(_content(item), depth + 1)
         out.append("  " * depth + marker + (inner[0] if inner else ""))
         out.extend(inner[1:])
     return out
 
 
 def _cell_text(cell):
-    return " ".join(line.strip() for line in _blocks(cell.get("content") or [], 0) if line.strip())
+    return " ".join(line.strip() for line in _blocks(_content(cell), 0) if line.strip())
 
 
 def _inline(nodes):
     parts = []
     for node in nodes:
-        attrs = node.get("attrs") or {}
+        attrs = _attrs(node)
         match node.get("type"):
             case "text":
                 parts.append(_text_with_marks(node))
@@ -104,17 +124,19 @@ def _inline(nodes):
             case "inlineExtension":
                 parts.append("[{}]".format(attrs.get("text") or attrs.get("extensionKey", "extension")))
             case _:
-                if node.get("content"):
-                    parts.append(_inline(node["content"]))
+                parts.append(_inline(_content(node)))
     return "".join(parts)
 
 
 def _text_with_marks(node):
-    value = node.get("text", "")
-    for mark in node.get("marks") or []:
-        if mark.get("type") == "link":
-            href = (mark.get("attrs") or {}).get("href", "")
-            if href and href != value:
+    value = node.get("text")
+    if not isinstance(value, str):
+        return ""
+    marks = node.get("marks")
+    for mark in marks if isinstance(marks, list) else []:
+        if isinstance(mark, dict) and mark.get("type") == "link":
+            href = _attrs(mark).get("href", "")
+            if isinstance(href, str) and href and href != value:
                 return "{} ({})".format(value, href)
     return value
 
