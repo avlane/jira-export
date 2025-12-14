@@ -159,6 +159,11 @@ class CliTests(unittest.TestCase):
         self.assertEqual(len(record["changelog"]), 4)
         self.assertEqual(session.calls[0]["json"]["expand"], "changelog")
 
+    def test_limit_and_incremental_do_not_mix(self):
+        code, _, err = run(["--jql", "project = PLAT", "-o", "x.csv", "--incremental", "state.json", "--limit", "5"])
+        self.assertEqual(code, 2)
+        self.assertIn("--limit cannot be combined", err)
+
     def test_limit(self):
         code, text, err = run(["--jql", "project = PLAT", "--limit", "2"])
         self.assertEqual([r["key"] for r in csv.DictReader(io.StringIO(text))], ["PLAT-101", "PLAT-102"])

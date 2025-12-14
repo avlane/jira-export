@@ -146,6 +146,10 @@ def main(argv=None, client=None, out=None):
     if args.incremental and (not args.output or args.format == "json"):
         print("error: --incremental needs --output and CSV or JSON Lines (a JSON array cannot be appended to)", file=sys.stderr)
         return 2
+    if args.limit is not None and args.incremental:
+        print("error: --limit cannot be combined with --incremental; the next run would skip the issues that were cut off",
+              file=sys.stderr)
+        return 2
     if args.manifest and not args.output:
         print("error: --manifest needs --output", file=sys.stderr)
         return 2
